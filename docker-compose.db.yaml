@@ -8,7 +8,6 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     environment:
-      # TODO: set up Postgres security
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
   pgadmin:
     image: dpage/pgadmin4:${PGADMIN_DOCKER_IMAGE:-6}
@@ -20,5 +19,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     restart: "no"
+    volumes:
+      - ./common/postgres/servers.json:/pgadmin4/servers.json
 volumes:
   db_data:
