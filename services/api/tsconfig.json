@@ -1,0 +1,40 @@
+{
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "jest.config.ts"],
+    "compilerOptions": {
+        /* Basic Options */
+        "target": "ES2017",
+        "module": "CommonJS",
+        "outDir": "./build/",
+        "rootDir": "./",
+        "removeComments": true,
+
+        /* Strict Type-Checking Options */
+        "strict": true,
+        "strictPropertyInitialization": false,
+
+        /* Additional Checks */
+        "noUnusedLocals": false,
+        "noUnusedParameters": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "importsNotUsedAsValues": "preserve",
+
+        /* Module Resolution Options */
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+
+        /* Source Map Options */
+        "inlineSourceMap": true,
+        "declaration": true,
+
+        /* Experimental Options */
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+
+        /* Advanced Options */
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "plugins": [{ "transform": "typescript-is/lib/transform-inline/transformer" }]
+    }
+}
