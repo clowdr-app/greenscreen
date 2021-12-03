@@ -129,3 +129,5 @@ certs
 
 # Database restore from backup
 restore/
+
+build/
