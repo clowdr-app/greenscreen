@@ -8,5 +8,7 @@ import { HealthController } from "./health/health.controller";
     controllers: [HealthController],
 })
 export class AppModule implements NestModule {
-    public configure(_consumer: MiddlewareConsumer): void {}
+    public configure(_consumer: MiddlewareConsumer): void {
+        //
+    }
 }

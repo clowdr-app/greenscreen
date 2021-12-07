@@ -1,0 +1,46 @@
+{
+    "name": "@greenscreen/prisma",
+    "version": "0.0.0",
+    "scripts": {
+        "build": "pnpm prisma:generate",
+        "prisma": "dotenv -e ../../../.env.local prisma",
+        "prisma:generate": "dotenv -e ../../../.env.local prisma generate",
+        "clean": "rimraf prisma/generated"
+    },
+    "author": "Clowdr CIC",
+    "license": "AGPL-3.0-or-later",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/clowdr-app/greenscreen.git",
+        "directory": "packages/node/prisma"
+    },
+    "bugs": {
+        "url": "https://github.com/clowdr-app/greenscreen/issues"
+    },
+    "homepage": "https://github.com/clowdr-app/greenscreen#readme",
+    "devDependencies": {
+        "dotenv-cli": "^4.1.1",
+        "prisma": "^3.6.0",
+        "rimraf": "^3.0.2"
+    },
+    "packageManager": "pnpm@6.23.5",
+    "engines": {
+        "node": ">=16.x",
+        "pnpm": "^6.19.x"
+    },
+    "main": "./prisma/generated/client/index.js",
+    "types": "./prisma/generated/client/index.d.ts",
+    "exports": {
+        ".": "./prisma/generated/client/index.js"
+    },
+    "typesVersions": {
+        "*": {
+            ".": [
+                "./prisma/generated/client/index.d.ts"
+            ]
+        }
+    },
+    "dependencies": {
+        "@prisma/client": "^3.6.0"
+    }
+}

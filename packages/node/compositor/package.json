@@ -1,0 +1,36 @@
+{
+    "name": "@greenscreen/compositor",
+    "private": true,
+    "version": "0.0.0",
+    "scripts": {
+        "build:image": "pnpm --silent --workspace-root pnpm-context -- -p '**/tsconfig*.json' -p '.scripts/' packages/node/compositor/Dockerfile | docker image build --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg BUILD_DATE=`date -u +”%Y-%m-%dT%H:%M:%SZ”` --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -",
+        "build": "tsc --build tsconfig.cjs.json",
+        "start:image": "docker run --rm -it --name=midspace-compositor midspace/compositor",
+        "start": "node --enable-source-maps build/cjs/index.js",
+        "clean": "rimraf build"
+    },
+    "author": "Clowdr CIC",
+    "license": "AGPL-3.0-or-later",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/clowdr-app/greenscreen.git",
+        "directory": "packages/node/compositor"
+    },
+    "bugs": {
+        "url": "https://github.com/clowdr-app/greenscreen/issues"
+    },
+    "homepage": "https://github.com/clowdr-app/greenscreen#readme",
+    "main": "build/cjs/index.js",
+    "dependencies": {},
+    "devDependencies": {
+        "dotenv-cli": "^4.1.1",
+        "rimraf": "^3.0.2",
+        "tsc-watch": "^4.4.0",
+        "typescript": "^4.5.2"
+    },
+    "packageManager": "pnpm@6.23.5",
+    "engines": {
+        "node": ">=16.x",
+        "pnpm": "^6.19.x"
+    }
+}

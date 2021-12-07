@@ -1,12 +1,10 @@
 {
-    "include": ["src/**/*"],
-    "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts", "jest.config.ts"],
     "compilerOptions": {
         /* Basic Options */
-        "target": "ES2017",
+        "target": "es2020",
         "module": "CommonJS",
-        "outDir": "./build/",
-        "rootDir": "./",
+        "declaration": true,
+        "declarationMap": true,
         "removeComments": true,
 
         /* Strict Type-Checking Options */
@@ -14,28 +12,24 @@
         "strictPropertyInitialization": false,
 
         /* Additional Checks */
-        "noUnusedLocals": false,
+        "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
-        "importsNotUsedAsValues": "preserve",
 
         /* Module Resolution Options */
         "moduleResolution": "node",
         "esModuleInterop": true,
+        "resolveJsonModule": true,
 
         /* Source Map Options */
         "inlineSourceMap": true,
-        "declaration": true,
 
         /* Experimental Options */
         "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
 
         /* Advanced Options */
         "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true,
-        "composite": true,
-        "incremental": true
+        "forceConsistentCasingInFileNames": true
     }
 }
