@@ -29,7 +29,10 @@ RUN --mount=type=cache,target=/var/cache/apt \
     fonts-wqy-zenhei \
     ffmpeg \
     xvfb \
-    pulseaudio
+    pulseaudio \
+    mesa-utils \
+    libx11-dev \
+    libxext-dev
 
 RUN mkdir -p /var/run/dbus \
     && dbus-uuidgen > /var/lib/dbus/machine-id

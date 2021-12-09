@@ -1,4 +1,4 @@
-import { startChromium } from "./processes/chromium";
+import { spawn } from "node:child_process";
 import { startFFmpeg } from "./processes/ffmpeg";
 import { startPulseAudio } from "./processes/pulseaudio";
 import { startXvfb, waitXvfb } from "./processes/xvfb";
@@ -21,11 +21,11 @@ async function main(): Promise<void> {
     await waitXvfb(display);
     // await startDBus();
     await startPulseAudio(display);
-    await startChromium(display);
+    // await startChromium(display);
     await sleep(5000);
-    // spawn("xeyes", ["-display", `:${display}`], {
-    //     shell: false,
-    // });
+    spawn("glxgears", ["-display", `:${display}`], {
+        shell: false,
+    });
     await startFFmpeg(display);
 }
 
