@@ -3,11 +3,12 @@
     "private": true,
     "version": "0.0.0",
     "scripts": {
+        "build:list-context": "pnpm --silent --workspace-root pnpm-context -- -p '**/tsconfig*.json' -p '.scripts/' --list-files packages/node/compositor/Dockerfile",
         "build:image": "pnpm --silent --workspace-root pnpm-context -- -p '**/tsconfig*.json' -p '.scripts/' packages/node/compositor/Dockerfile | docker image build --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg BUILD_DATE=`date -u +”%Y-%m-%dT%H:%M:%SZ”` --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -",
         "build": "tsc --build tsconfig.cjs.json",
-        "start:image": "docker run --rm -it --name=midspace-compositor midspace/compositor",
+        "start:image": "mkdir -p build/temp && docker run --rm -it --mount type=bind,source=\"$(pwd)\"/build/temp,target=/var/greenscreen --security-opt seccomp=src/resources/chrome.json --name=midspace-compositor midspace/compositor",
         "start": "node --enable-source-maps build/cjs/index.js",
-        "clean": "rimraf build"
+        "clean": "rimraf build && docker builder prune --filter type=exec.cachemount"
     },
     "author": "Clowdr CIC",
     "license": "AGPL-3.0-or-later",
@@ -21,14 +22,21 @@
     },
     "homepage": "https://github.com/clowdr-app/greenscreen#readme",
     "main": "build/cjs/index.js",
-    "dependencies": {},
+    "dependencies": {
+        "arg": "^5.0.1",
+        "async-wait-until": "^2.0.9",
+        "pino": "^7.5.1",
+        "puppeteer-core": "^12.0.1"
+    },
     "devDependencies": {
+        "@types/node": "^16.11.7",
         "dotenv-cli": "^4.1.1",
+        "pino-pretty": "^7.2.0",
         "rimraf": "^3.0.2",
         "tsc-watch": "^4.4.0",
         "typescript": "^4.5.2"
     },
-    "packageManager": "pnpm@6.23.5",
+    "packageManager": "pnpm@6.23.6",
     "engines": {
         "node": ">=16.x",
         "pnpm": "^6.19.x"
