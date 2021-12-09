@@ -4,6 +4,7 @@ import { startPulseAudio } from "./processes/pulseaudio";
 import { startXvfb, waitXvfb } from "./processes/xvfb";
 import { logger } from "./util/logger";
 import { pathExists } from "./util/path-exists";
+import { sleep } from "./util/sleep";
 
 // const args = arg({
 //     "--sleep": Boolean,
@@ -21,6 +22,7 @@ async function main(): Promise<void> {
     // await startDBus();
     await startPulseAudio(display);
     await startChromium(display);
+    await sleep(5000);
     // spawn("xeyes", ["-display", `:${display}`], {
     //     shell: false,
     // });

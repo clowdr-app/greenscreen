@@ -20,8 +20,10 @@ export async function startChromium(displayNumber: string): Promise<void> {
             "--window-position=0,0",
             "--window-size=1280,720",
             "--enable-logging=stderr",
+            // "--no-sandbox",
             "--v=1",
             "--app=https://shattereddisk.github.io/rickroll/rickroll.mp4",
+            // "--app=https://www.youtube.com/watch?v=ucZl6vQ_8Uo",
         ],
         // args: ["--disable-dev-shm-usage"],
     });
