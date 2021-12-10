@@ -12,7 +12,7 @@ function monitorProc(process: ChildProcess, name: string): void {
 }
 
 async function main(): Promise<void> {
-    const gitResult = await execa("git rev-parse --short HEAD");
+    const gitResult = await execa("git rev-parse --short HEAD", { shell: true });
     const commitHash = gitResult.stdout;
 
     const date = new Date().toISOString();
