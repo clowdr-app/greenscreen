@@ -152,7 +152,7 @@ async function getMetafilesFromPnpmSelector(selector, cwd, options = {}) {
  */
 async function getPackagePathsFromPnpmSelector(selector, cwd) {
     const projects = await readProjects(cwd, [parsePackageSelector(selector, cwd)]);
-    return Object.keys(projects.selectedProjectsGraph).map((p) => relative(cwd, p));
+    return Object.keys(projects.selectedProjectsGraph).map((p) => relative(cwd, p).replaceAll("\\", "/"));
 }
 
 /**

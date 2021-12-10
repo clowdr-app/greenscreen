@@ -4,9 +4,9 @@
     "version": "0.0.0",
     "scripts": {
         "build:list-context": "pnpm --silent --workspace-root pnpm-context -- -p '**/tsconfig*.json' -p '.scripts/' --list-files packages/node/compositor/Dockerfile",
-        "build:image": "pnpm --silent --workspace-root pnpm-context -- -p '**/tsconfig*.json' -p '.scripts/' packages/node/compositor/Dockerfile | docker image build --build-arg VCS_REF=`git rev-parse --short HEAD` --build-arg BUILD_DATE=`date -u +”%Y-%m-%dT%H:%M:%SZ”` --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -",
+        "build:image": "ts-node .scripts/build-image.ts",
         "build": "tsc --build tsconfig.cjs.json",
-        "start:image": "mkdir -p build/temp && docker run --rm -it --mount type=bind,source=\"$(pwd)\"/build/temp,target=/var/greenscreen --security-opt seccomp=src/resources/chrome.json --name=midspace-compositor midspace/compositor",
+        "start:image": "ts-node .scripts/start-image.ts",
         "start": "node --enable-source-maps build/cjs/index.js",
         "clean": "rimraf build && docker builder prune --filter type=exec.cachemount"
     },
@@ -30,9 +30,13 @@
     },
     "devDependencies": {
         "@types/node": "^16.11.7",
+        "@types/normalize-path": "^3.0.0",
         "dotenv-cli": "^4.1.1",
+        "execa": "5.1.1",
+        "normalize-path": "^3.0.0",
         "pino-pretty": "^7.2.0",
         "rimraf": "^3.0.2",
+        "ts-node": "^10.4.0",
         "tsc-watch": "^4.4.0",
         "typescript": "^4.5.2"
     },
