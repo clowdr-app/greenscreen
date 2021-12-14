@@ -2,62 +2,117 @@ import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import { logger } from "../util/logger";
 
-export async function startFFmpeg(displayNumber: string): Promise<void> {
-    // ffmpeg -y -f x11grab -draw_mouse 0 -t 00:00:15 -s 1280x720 -i :1.0+0,0 -f pulse -ac 2 -i default -c:v libvpx -b:v 384k -qmin 10 -qmax 42 -maxrate 384k -bufsize 4000k -c:a aac -b:a 128k /root/temp/screen.webm &
+type mainOptions = {
+    outputFile: string;
+    promptOnOverwrite?: boolean;
+    outputDuration?: string;
+};
+
+type videoOptions = {
+    screenHeight?: number;
+    screenWidth?: number;
+    drawMouse?: boolean;
+    videoInputMaxQueuedPackets?: number;
+    videoCodec?: string;
+    videoBitrate?: string;
+};
+
+type x11grabOptions = {
+    displayNumber: string;
+    screenNumber?: string;
+    frameRate?: number;
+};
+
+type audioOptions = {
+    audioSourceDevice?: string;
+    audioChannelCount?: number;
+    audioInputMaxQueuedPackets?: number;
+    audioCodec?: string;
+    audioBitrate?: string;
+};
+
+type outputCodecOptions = {
+    videoQuantizerScaleMin?: number;
+    videoQuantizerScaleMax?: number;
+};
+
+export async function startFFmpeg({
+    outputFile,
+    promptOnOverwrite = false,
+    outputDuration = "00:01:00",
+    displayNumber,
+    screenNumber = "0",
+    drawMouse = false,
+    frameRate = 30,
+    screenHeight = 720,
+    screenWidth = 0,
+    videoInputMaxQueuedPackets = 512,
+    videoCodec = "libvpx",
+    videoBitrate = "384k",
+    videoQuantizerScaleMin = 10,
+    videoQuantizerScaleMax = 42,
+    audioSourceDevice = "default",
+    audioChannelCount = 2,
+    audioInputMaxQueuedPackets = 512,
+    audioCodec = "libvorbis",
+    audioBitrate,
+}: mainOptions & videoOptions & x11grabOptions & audioOptions & outputCodecOptions): Promise<void> {
+    if (screenHeight && !screenWidth) {
+        screenWidth = (screenHeight * 16) / 9;
+    }
+
+    const videoInputArgs: string[] = [
+        ...["-f", "x11grab"],
+        ...["-draw_mouse", drawMouse ? "1" : "0"],
+        ...(frameRate ? ["-framerate", frameRate.toString()] : []),
+        ...(screenHeight ? ["-s", `${screenWidth}x${screenHeight}`] : []),
+        ...(videoInputMaxQueuedPackets ? ["-thread_queue_size", videoInputMaxQueuedPackets.toString()] : []),
+        ...["-i", `:${displayNumber}.${screenNumber}`],
+    ];
+
+    const audioInputArgs: string[] = [
+        ...["-f", "pulse"],
+        ...(audioChannelCount ? ["-ac", audioChannelCount.toString()] : []),
+        ...(audioInputMaxQueuedPackets ? ["-thread_queue_size", audioInputMaxQueuedPackets.toString()] : []),
+        ...["-i", audioSourceDevice],
+    ];
+
+    const videoOutputArgs: string[] = [
+        ...(videoCodec ? ["-c:v", videoCodec] : []),
+        ...(videoBitrate ? ["-b:v", videoBitrate] : []),
+        ...(videoQuantizerScaleMin ? ["-qmin", videoQuantizerScaleMin.toString()] : []),
+        ...(videoQuantizerScaleMax ? ["-qmax", videoQuantizerScaleMax.toString()] : []),
+    ];
+
+    const audioOutputArgs: string[] = [
+        ...(audioCodec ? ["-c:a", audioCodec] : []),
+        ...(audioBitrate ? ["-b:a", audioBitrate] : []),
+    ];
+
+    const outputArgs: string[] = [
+        ...videoOutputArgs,
+        ...audioOutputArgs,
+        ...(outputDuration ? ["-t", outputDuration] : []),
+        outputFile,
+    ];
+
+    const ffmpegArgs: string[] = [
+        ...(promptOnOverwrite ? [] : ["-y"]),
+        ...videoInputArgs,
+        ...audioInputArgs,
+        ...outputArgs,
+    ];
+
     try {
         const ffmpegLogger = logger.child({ module: "ffmpeg" });
-        const ffmpegProcess = spawn(
-            "ffmpeg",
-            [
-                "-y",
-                "-f",
-                "x11grab",
-                "-draw_mouse",
-                "0",
-                "-framerate",
-                "30",
-                "-s",
-                "1280x720",
-                "-thread_queue_size",
-                "512",
-                "-i",
-                `:${displayNumber}.0+0,0`,
-                "-f",
-                "pulse",
-                "-ac",
-                "2",
-                "-thread_queue_size",
-                "512",
-                "-i",
-                "default",
-                "-c:v",
-                "libvpx",
-                "-b:v",
-                "384k",
-                "-qmin",
-                "10",
-                "-qmax",
-                "42",
-                // "-maxrate",
-                // "384k",
-                // "-bufsize",
-                // "4000k",
-                "-c:a",
-                "libvorbis",
-                "-t",
-                "00:01:00",
-                // "-b:a",
-                // "64k",
-                "/var/greenscreen/screen.webm",
-            ],
-            {
-                shell: false,
-                env: {
-                    ...process.env,
-                    DISPLAY: displayNumber,
-                },
-            }
-        );
+        ffmpegLogger.info({ ffmpegArgs }, "launching ffmpeg with arguments");
+        const ffmpegProcess = spawn("ffmpeg", ffmpegArgs, {
+            shell: false,
+            env: {
+                ...process.env,
+                DISPLAY: displayNumber,
+            },
+        });
         const rlStdout = createInterface(ffmpegProcess.stdout);
         const rlStderr = createInterface(ffmpegProcess.stderr);
         rlStdout.on("line", (msg) => ffmpegLogger.info(msg));
@@ -83,7 +138,8 @@ export async function startFFmpeg(displayNumber: string): Promise<void> {
             ffmpegLogger.info("FFmpeg spawn");
         });
     } catch (err) {
-        logger.error({ err }, "Failed to launch PulseAudio");
-        throw new Error("Failed to launch PulseAudio");
+        const msg = "Failed to launch ffmpeg";
+        logger.error({ err }, msg);
+        throw new Error(msg);
     }
 }

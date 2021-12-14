@@ -26,7 +26,7 @@ async function main(): Promise<void> {
     // spawn("xeyes", ["-display", `:${display}`], {
     //     shell: false,
     // });
-    await startFFmpeg(display);
+    await startFFmpeg({ displayNumber: display, outputFile: "/var/greenscreen/screen.webm" });
 }
 
 logger.info("Starting compositor");
