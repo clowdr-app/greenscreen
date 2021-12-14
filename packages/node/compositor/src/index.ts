@@ -23,7 +23,7 @@ async function main(): Promise<void> {
     await startPulseAudio(display);
     await startChromium(display);
     await sleep(5000);
-    // spawn("xeyes", ["-display", `:${display}`], {
+    // spawn("glxgears", ["-display", `:${display}`], {
     //     shell: false,
     // });
     await startFFmpeg({ displayNumber: display, outputFile: "/var/greenscreen/screen.webm" });

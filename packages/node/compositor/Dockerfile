@@ -24,12 +24,16 @@ ARG PACKAGE_PATH
 RUN --mount=type=cache,target=/var/cache/apt \
     install_packages \
     chromium \
+    chromium-sandbox \
     fonts-freefont-ttf \
     fonts-noto-color-emoji \
     fonts-wqy-zenhei \
     ffmpeg \
     xvfb \
-    pulseaudio
+    pulseaudio \
+    mesa-utils \
+    libx11-dev \
+    libxext-dev
 
 RUN mkdir -p /var/run/dbus \
     && dbus-uuidgen > /var/lib/dbus/machine-id

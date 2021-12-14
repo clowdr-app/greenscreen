@@ -1,0 +1,12 @@
+{
+    "name": "midspace-greenscreen",
+    "devDependencies": {
+        "@types/node": "^14"
+    },
+    "dependencies": {
+        "@pulumi/aws": "^4.0.0",
+        "@pulumi/aws-native": "^0.8.0",
+        "@pulumi/awsx": "^0.30.0",
+        "@pulumi/pulumi": "^3.0.0"
+    }
+}
