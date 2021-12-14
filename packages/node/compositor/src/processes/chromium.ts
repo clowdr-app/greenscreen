@@ -6,7 +6,7 @@ export async function startChromium(displayNumber: string): Promise<void> {
     const chromiumLogger = logger.child({ module: "chromium" });
     chromiumLogger.info("Starting Chromium");
     const browser = await puppeteer.launch({
-        executablePath: "/usr/bin/chromium",
+        executablePath: "/usr/bin/chromium-sandbox",
         env: {
             ...process.env,
             DISPLAY: `:${displayNumber}.0`,

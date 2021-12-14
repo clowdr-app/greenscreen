@@ -1,0 +1,10 @@
+- Build test pages (av sync, multiple videos, quality with high and low motion)
+  - Test audio-video synchronisation
+- Investigate video decoding performance/find correct flags and packages to use
+  - Experiment with balancing bitrate and quality
+  - Try using ALSA
+- Stream metrics in logs
+- Try running on different machines (Ross desktop, Fargate)
+- Make it possible to debug into the TypeScript code when running in container
+- Figure out how to lock down exact Chromium version
+- Connect to RabbitMQ
