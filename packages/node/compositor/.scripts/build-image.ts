@@ -31,7 +31,8 @@ async function main(): Promise<void> {
     monitorProc(pnpmContextProc, "pnpm-context");
 
     const dockerProc = spawn(
-        `docker image build --build-arg VCS_REF=${commitHash} --build-arg BUILD_DATE="${date}" --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -`,
+        // `docker image build --build-arg VCS_REF=${commitHash} --build-arg BUILD_DATE="${date}" --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -`,
+        `docker buildx build --no-cache --platform linux/arm64/v8 --load --build-arg VCS_REF=${commitHash} --build-arg BUILD_DATE="${date}" --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -`,
         { shell: true, stdio: ["pipe", stdout, stderr] }
     );
 
