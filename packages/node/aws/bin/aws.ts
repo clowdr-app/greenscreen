@@ -2,14 +2,14 @@
 import assert from "assert";
 import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
-import { AwsStack } from "../lib/compositor-stack";
+import { CompositorStack } from "../lib/compositor-stack";
 
 assert(process.env.AWS_CLUSTER_ACCOUNT_ID);
 const account = process.env.AWS_CLUSTER_ACCOUNT_ID;
 const region = process.env.AWS_CLUSTER_REGION ?? "eu-west-1";
 
 const app = new cdk.App();
-new AwsStack(app, "CompositorStack", {
+new CompositorStack(app, "CompositorStack", {
     /* If you don't specify 'env', this stack will be environment-agnostic.
      * Account/Region-dependent features and context lookups will not work,
      * but a single synthesized template can be deployed anywhere. */

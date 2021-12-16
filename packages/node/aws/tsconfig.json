@@ -1,7 +1,38 @@
 {
-    "extends": "../../tsconfig.cjs.base.json",
     "compilerOptions": {
-        "typeRoots": ["./node_modules/@types"]
+        "typeRoots": ["./node_modules/@types"],
+
+        /* Basic Options */
+        "target": "es2021",
+        "module": "CommonJS",
+        "declaration": true,
+        "declarationMap": true,
+        "removeComments": true,
+
+        /* Strict Type-Checking Options */
+        "strict": true,
+        "strictPropertyInitialization": false,
+
+        /* Additional Checks */
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+
+        /* Module Resolution Options */
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+
+        /* Source Map Options */
+        "inlineSourceMap": true,
+
+        /* Experimental Options */
+        "experimentalDecorators": true,
+
+        /* Advanced Options */
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true
     },
     "exclude": ["node_modules", "cdk.out"]
 }

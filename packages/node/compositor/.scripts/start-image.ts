@@ -29,6 +29,8 @@ async function main(): Promise<void> {
             "-it",
             "--mount",
             `type=bind,source=${dockerifyPath(tempDir)},target=/var/greenscreen`,
+            // "--cap-add",
+            // "SYS_ADMIN",
             "--security-opt",
             "seccomp=src/resources/chrome.json",
             "--name=midspace-compositor",

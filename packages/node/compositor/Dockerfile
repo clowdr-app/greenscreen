@@ -24,7 +24,6 @@ ARG PACKAGE_PATH
 RUN --mount=type=cache,target=/var/cache/apt \
     install_packages \
     chromium \
-    chromium-sandbox \
     fonts-freefont-ttf \
     fonts-noto-color-emoji \
     fonts-wqy-zenhei \

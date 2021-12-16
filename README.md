@@ -16,6 +16,12 @@
 1. Run `pnpm build:image` to build the Docker image.
 1. Run `pnpm start:image` to start the Docker image. At the moment, this will automatically record a 60-second video clip.
 
+#### Push image to repository
+
+1. `aws ecr get-login-password --profile sandbox --region eu-west-1 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.eu-west-1.amazonaws.com`
+1. `docker tag midspace/compositor:latest <account-id>.dkr.ecr.eu-west-1.amazonaws.com/midspace/compositor:latest`
+1. `docker push <account-id>.dkr.ecr.eu-west-1.amazonaws.com/midspace/compositor:latest`
+
 ### API
 
 TODO

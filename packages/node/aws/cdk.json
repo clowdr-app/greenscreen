@@ -1,5 +1,5 @@
 {
-    "app": "pnpm exec dotenv -e ../../../.env.current ts-node --prefer-ts-exts bin/aws.ts",
+    "app": "pnpm exec dotenv -e ../../../.env.current -- ts-node --prefer-ts-exts bin/aws.ts",
     "watch": {
         "include": ["**"],
         "exclude": [
