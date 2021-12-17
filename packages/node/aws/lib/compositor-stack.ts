@@ -27,14 +27,15 @@ export class CompositorStack extends Stack {
 
         const repository = ecr.Repository.fromRepositoryName(this, "CompositorImageRepository", "midspace/compositor");
 
-        taskDefinition.addContainer("compositor", {
+        const compositorTaskDefinition = taskDefinition.addContainer("compositor", {
             image: ecs.ContainerImage.fromEcrRepository(repository, "latest"),
             memoryLimitMiB: 4096,
             cpu: 512,
             logging,
+            linuxParameters: new ecs.LinuxParameters(this, "LinuxParameters"),
         });
 
-        // compositorTaskDefinition.linuxParameters?.addCapabilities(ecs.Capability.ALL);
+        compositorTaskDefinition.linuxParameters?.addCapabilities(ecs.Capability.SYS_ADMIN);
 
         // container.addPortMappings({
         //     containerPort: 80,

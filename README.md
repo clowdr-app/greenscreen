@@ -9,6 +9,9 @@
 
 1. Run `corepack enable`. This enables corepack in Node to make the `pnpm` package manager available.
 1. Run `pnpm i` to install dependencies for the whole repository.
+1. Copy `.env.example` to e.g. `.env.local` and symlink to `.env.current`
+   1. Windows: `mklink .env.local .env.current`
+   1. Linux: `ln -s .env.current .env.local`
 
 ### Compositor
 

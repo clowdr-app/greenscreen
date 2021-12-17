@@ -29,10 +29,12 @@ async function main(): Promise<void> {
             "-it",
             "--mount",
             `type=bind,source=${dockerifyPath(tempDir)},target=/var/greenscreen`,
-            // "--cap-add",
-            // "SYS_ADMIN",
-            "--security-opt",
-            "seccomp=src/resources/chrome.json",
+            "--cap-add",
+            "SYS_ADMIN",
+            // An tighter alternative to the SYS_ADMIN permission - disabled for now because
+            // it's rather more complicated to supply to ECS
+            // "--security-opt",
+            // "seccomp=src/resources/chrome.json",
             "--name=midspace-compositor",
             "midspace/compositor",
         ],
