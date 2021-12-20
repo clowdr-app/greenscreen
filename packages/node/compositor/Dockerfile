@@ -1,7 +1,11 @@
+# syntax=docker/dockerfile:1.3
 FROM bitnami/minideb:bullseye AS base
 
 ARG PNPM_VERSION=6.23.6
+
+# Remove debian base image apt cache deletion script
 RUN rm -f /etc/apt/apt.conf.d/docker-clean
+
 RUN --mount=type=cache,target=/var/cache/apt \
     install_packages curl ca-certificates
 RUN curl -fsSL https://deb.nodesource.com/setup_17.x | bash -
