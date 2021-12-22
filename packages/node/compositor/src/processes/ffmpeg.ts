@@ -89,14 +89,14 @@ export async function startFFmpeg({
         ...(audioBitrate ? ["-b:a", audioBitrate] : []),
     ];
 
+    // outputFile is not included, so that it is not logged, as stream key may be included
     const outputArgs: string[] = [
         ...videoOutputArgs,
         ...audioOutputArgs,
         ...(outputDuration ? ["-t", outputDuration] : []),
-        outputFile,
     ];
 
-    const ffmpegArgs: string[] = [
+    const ffmpegArgsNonSecret: string[] = [
         ...(promptOnOverwrite ? [] : ["-y"]),
         ...videoInputArgs,
         ...audioInputArgs,
@@ -105,8 +105,8 @@ export async function startFFmpeg({
 
     try {
         const ffmpegLogger = logger.child({ module: "ffmpeg" });
-        ffmpegLogger.info({ ffmpegArgs }, "launching ffmpeg with arguments");
-        const ffmpegProcess = spawn("ffmpeg", ffmpegArgs, {
+        ffmpegLogger.info({ ffmpegArgsNonSecret }, "launching ffmpeg with arguments");
+        const ffmpegProcess = spawn("ffmpeg", [...ffmpegArgsNonSecret, outputFile], {
             shell: false,
             env: {
                 ...process.env,
