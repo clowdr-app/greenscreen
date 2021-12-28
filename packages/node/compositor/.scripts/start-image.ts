@@ -35,6 +35,8 @@ async function main(): Promise<void> {
             // it's rather more complicated to supply to ECS
             // "--security-opt",
             // "seccomp=src/resources/chrome.json",
+            "--env",
+            "STREAM_INGEST_URL=rtmps://000000000000.global-contribute.live-video.net:443/app/sk_eu-west-1_XXXXXXXXXXXX_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
             "--name=midspace-compositor",
             "midspace/compositor",
         ],

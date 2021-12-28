@@ -1,3 +1,4 @@
+import { strict as assert } from "node:assert";
 import { startChromium } from "./processes/chromium";
 import { startFFmpeg } from "./processes/ffmpeg";
 import { startPulseAudio } from "./processes/pulseaudio";
@@ -13,6 +14,9 @@ import { sleep } from "./util/sleep";
 export const display = process.env.DISPLAY ?? "1";
 logger.info({ display }, "Display number");
 
+const streamIngestUrl = process.env.STREAM_INGEST_URL || "";
+assert(streamIngestUrl);
+
 async function main(): Promise<void> {
     if (await pathExists(`/tmp/.X${display}-lock`)) {
         throw new Error("X lockfile already exists. Please close the existing server.");
@@ -26,7 +30,7 @@ async function main(): Promise<void> {
     // spawn("glxgears", ["-display", `:${display}`], {
     //     shell: false,
     // });
-    await startFFmpeg({ displayNumber: display, outputFile: "/var/greenscreen/screen.webm" });
+    await startFFmpeg({ displayNumber: display, rtmpURL: streamIngestUrl });
 }
 
 logger.info("Starting compositor");

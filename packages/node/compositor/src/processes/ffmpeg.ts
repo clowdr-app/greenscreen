@@ -3,43 +3,47 @@ import { createInterface } from "node:readline";
 import { logger } from "../util/logger";
 
 type mainOptions = {
-    outputFile: string;
-    promptOnOverwrite?: boolean;
-    outputDuration?: string;
-};
-
-type videoOptions = {
-    screenHeight?: number;
-    screenWidth?: number;
-    drawMouse?: boolean;
-    videoInputMaxQueuedPackets?: number;
-    videoCodec?: string;
-    videoBitrate?: string;
+    rtmpURL: string;
+    interactive?: boolean;
+    duration?: string;
 };
 
 type x11grabOptions = {
-    displayNumber: string;
+    screenHeight?: number;
+    screenWidth?: number;
+    displayNumber?: string;
     screenNumber?: string;
     frameRate?: number;
+    drawMouse?: boolean;
+    videoInputMaxQueuedPackets?: number;
 };
+
+type x264Options = {
+    x264Preset?: string;
+    x264Tune?: string;
+    x264Profile?: string;
+    pixelFormat?: string;
+    videoBitrateKbps?: number;
+    videoQuantizerScaleMin?: number;
+    videoQuantizerScaleMax?: number;
+    x264OtherParams?: string;
+};
+const x264ParamConstantBitrate = "nal-hrd=cbr";
+const x264ParamNoKeyframeOnSceneCut = "scenecut=0";
 
 type audioOptions = {
     audioSourceDevice?: string;
     audioChannelCount?: number;
     audioInputMaxQueuedPackets?: number;
     audioCodec?: string;
-    audioBitrate?: string;
-};
-
-type outputCodecOptions = {
-    videoQuantizerScaleMin?: number;
-    videoQuantizerScaleMax?: number;
+    audioBitrateKbps?: number;
+    audioSamplingFreqHz?: number;
 };
 
 export async function startFFmpeg({
-    outputFile,
-    promptOnOverwrite = false,
-    outputDuration = "00:01:00",
+    rtmpURL,
+    interactive = false,
+    duration = "00:01:00",
     displayNumber,
     screenNumber = "0",
     drawMouse = false,
@@ -47,20 +51,29 @@ export async function startFFmpeg({
     screenHeight = 720,
     screenWidth = 0,
     videoInputMaxQueuedPackets = 512,
-    videoCodec = "libvpx",
-    videoBitrate = "384k",
-    videoQuantizerScaleMin = 10,
-    videoQuantizerScaleMax = 42,
+    x264Preset = "veryfast",
+    x264Tune = "zerolatency",
+    x264Profile = "main",
+    pixelFormat = "yuv420p",
+    videoBitrateKbps = 3000,
+    videoQuantizerScaleMin = 0,
+    videoQuantizerScaleMax = 0,
+    x264OtherParams = [x264ParamConstantBitrate, x264ParamNoKeyframeOnSceneCut].join(":"),
     audioSourceDevice = "default",
-    audioChannelCount = 2,
     audioInputMaxQueuedPackets = 512,
-    audioCodec = "libvorbis",
-    audioBitrate,
-}: mainOptions & videoOptions & x11grabOptions & audioOptions & outputCodecOptions): Promise<void> {
+    audioChannelCount = 2,
+    audioBitrateKbps = 160,
+    audioSamplingFreqHz = 44100,
+}: mainOptions & x11grabOptions & x264Options & audioOptions): Promise<void> {
     if (screenHeight && !screenWidth) {
-        screenWidth = (screenHeight * 16) / 9;
+        screenWidth = Math.ceil((screenHeight * 16) / 9);
     }
 
+    // Generated test video; remember to comment out unused parameters before building
+    // const videoInputArgs: string[] = [
+    //     ...["-f", "lavfi"],
+    //     ...["-i", `testsrc=duration=60:size=${screenWidth}x${screenHeight}`],
+    // ];
     const videoInputArgs: string[] = [
         ...["-f", "x11grab"],
         ...["-draw_mouse", drawMouse ? "1" : "0"],
@@ -77,27 +90,37 @@ export async function startFFmpeg({
         ...["-i", audioSourceDevice],
     ];
 
+    const vbrStr = `${videoBitrateKbps}K`;
     const videoOutputArgs: string[] = [
-        ...(videoCodec ? ["-c:v", videoCodec] : []),
-        ...(videoBitrate ? ["-b:v", videoBitrate] : []),
+        ...["-c:v", "libx264"],
+        ...(pixelFormat ? ["-pix_fmt", pixelFormat] : []),
+        ...(videoBitrateKbps ? ["-b:v", vbrStr, "-bufsize", vbrStr, "-maxrate", vbrStr, "-minrate", vbrStr] : []),
         ...(videoQuantizerScaleMin ? ["-qmin", videoQuantizerScaleMin.toString()] : []),
         ...(videoQuantizerScaleMax ? ["-qmax", videoQuantizerScaleMax.toString()] : []),
+        ...(x264Profile ? ["-profile:v", x264Profile] : []),
+        ...(x264Tune ? ["-tune", x264Tune] : []),
+        ...(x264Preset ? ["-preset", x264Preset] : []),
+        ...(x264OtherParams ? ["-x264-params", x264OtherParams] : []),
     ];
 
     const audioOutputArgs: string[] = [
-        ...(audioCodec ? ["-c:a", audioCodec] : []),
-        ...(audioBitrate ? ["-b:a", audioBitrate] : []),
+        ...["-c:a", "aac"],
+        ...(audioBitrateKbps ? ["-b:a", `${audioBitrateKbps}K`] : []),
+        ...(audioChannelCount ? ["-ac", audioChannelCount.toString()] : []),
+        ...(audioSamplingFreqHz ? ["-ar", audioSamplingFreqHz.toString()] : []),
     ];
 
-    // outputFile is not included, so that it is not logged, as stream key may be included
     const outputArgs: string[] = [
         ...videoOutputArgs,
         ...audioOutputArgs,
-        ...(outputDuration ? ["-t", outputDuration] : []),
+        ...(duration ? ["-t", duration] : []),
+        ...["-f", "flv", "-flvflags", "no_duration_filesize"],
     ];
 
+    // rtmpURL is added later, so that it is not explicitly logged, as stream key may be included
+    // TODO is it logged at any other time and does it matter?
     const ffmpegArgsNonSecret: string[] = [
-        ...(promptOnOverwrite ? [] : ["-y"]),
+        ...(interactive ? [] : ["-y"]),
         ...videoInputArgs,
         ...audioInputArgs,
         ...outputArgs,
@@ -106,7 +129,7 @@ export async function startFFmpeg({
     try {
         const ffmpegLogger = logger.child({ module: "ffmpeg" });
         ffmpegLogger.info({ ffmpegArgsNonSecret }, "launching ffmpeg with arguments");
-        const ffmpegProcess = spawn("ffmpeg", [...ffmpegArgsNonSecret, outputFile], {
+        const ffmpegProcess = spawn("ffmpeg", [...ffmpegArgsNonSecret, rtmpURL], {
             shell: false,
             env: {
                 ...process.env,
