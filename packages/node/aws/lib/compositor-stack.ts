@@ -3,27 +3,30 @@ import { Stack } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import type { Construct } from "constructs";
 
 export class CompositorStack extends Stack {
     constructor(scope: Construct, id: string, props?: StackProps) {
         super(scope, id, props);
 
+        const s3Bucket = new s3.Bucket(this, "OutputBucket", {});
+
         const vpc = new ec2.Vpc(this, "Vpc", {});
 
         const cluster = new ecs.Cluster(this, "EcsCluster", { vpc, containerInsights: true });
 
         cluster.addCapacity("DefaultAutoScalingGroup", {
-            instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.LARGE),
-            minCapacity: 1,
+            instanceType: ec2.InstanceType.of(ec2.InstanceClass.C6I, ec2.InstanceSize.LARGE),
+            minCapacity: 0,
             maxCapacity: 1,
         });
 
         const logging = new ecs.AwsLogDriver({ streamPrefix: "compositor" });
 
-        const taskDefinition = new ecs.Ec2TaskDefinition(this, "CompositorTaskDefinition", {
-            // placementConstraints: [ecs.PlacementConstraint.distinctInstances()],
-        });
+        const taskDefinition = new ecs.Ec2TaskDefinition(this, "CompositorTaskDefinition", {});
+
+        s3Bucket.grantReadWrite(taskDefinition.taskRole);
 
         const repository = ecr.Repository.fromRepositoryName(this, "CompositorImageRepository", "midspace/compositor");
 
@@ -36,6 +39,7 @@ export class CompositorStack extends Stack {
         });
 
         compositorTaskDefinition.linuxParameters?.addCapabilities(ecs.Capability.SYS_ADMIN);
+        compositorTaskDefinition.addEnvironment("S3_BUCKET_NAME", s3Bucket.bucketName);
 
         // container.addPortMappings({
         //     containerPort: 80,

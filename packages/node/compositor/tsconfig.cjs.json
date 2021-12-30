@@ -5,6 +5,7 @@
     "compilerOptions": {
         "outDir": "./build/cjs",
         "rootDir": "./src/",
+        // "sourceRoot": "./src",
         "composite": true
     }
 }

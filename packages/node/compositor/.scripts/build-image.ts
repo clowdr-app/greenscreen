@@ -1,6 +1,6 @@
 import execa from "execa";
 import { ChildProcess, spawn } from "node:child_process";
-import { stderr, stdin, stdout } from "node:process";
+import { exit, stderr, stdin, stdout } from "node:process";
 
 function monitorProc(process: ChildProcess, name: string): void {
     process.on("close", () => console.log(`${name} close`));
@@ -18,7 +18,7 @@ async function main(): Promise<void> {
     const date = new Date().toISOString();
 
     const pnpmContextProc = spawn(
-        `pnpm --silent --workspace-root pnpm-context -- -p '**/tsconfig*.json' -p '.scripts/' packages/node/compositor/Dockerfile`,
+        `pnpm --silent --workspace-root pnpm-context -- -p '**/tsconfig*.json' -p '!.scripts/' packages/node/compositor/Dockerfile`,
         {
             // cwd: cwd(),
             // // detached: true,
@@ -32,14 +32,18 @@ async function main(): Promise<void> {
 
     const dockerProc = spawn(
         // `docker image build --build-arg VCS_REF=${commitHash} --build-arg BUILD_DATE="${date}" --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -`,
-        // `docker buildx build --no-cache --platform linux/arm64/v8 --load --build-arg VCS_REF=${commitHash} --build-arg BUILD_DATE="${date}" --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -`,
-        `docker buildx build --no-cache --platform linux/amd64 --load --build-arg VCS_REF=${commitHash} --build-arg BUILD_DATE="${date}" --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -`,
+        `docker buildx build --platform linux/arm64/v8 --load --build-arg VCS_REF=${commitHash} --build-arg BUILD_DATE="${date}" --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -`,
+        // `docker buildx build --platform linux/amd64 --load --build-arg VCS_REF=${commitHash} --build-arg BUILD_DATE="${date}" --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -`,
         { shell: true, stdio: ["pipe", stdout, stderr] }
     );
 
     // fs.writeFile("out.tar", )
     // const outputFile = fs.createWriteStream("out.tar");
     // pnpmContextProc.stdout.pipe(outputFile);
+
+    dockerProc.on("exit", (code) => {
+        exit(code ?? 0);
+    });
 
     const pipe = pnpmContextProc.stdout.pipe(dockerProc.stdin);
     pipe.on("error", (err) => {
@@ -49,4 +53,5 @@ async function main(): Promise<void> {
 
 main().catch((err) => {
     console.error("Failed to build image", err);
+    throw err;
 });
