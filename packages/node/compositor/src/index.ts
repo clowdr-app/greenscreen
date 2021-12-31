@@ -5,11 +5,14 @@ import { createMachine, interpret } from "xstate";
 import { resolveConfig } from "./config";
 import type { ChromiumEvent, ChromiumMachine } from "./processes/chromium";
 import { createChromiumMachine } from "./processes/chromium";
+import type { FFmpegEvent, FFmpegMachine } from "./processes/ffmpeg";
+import { createFFmpegMachine } from "./processes/ffmpeg";
 import type { PulseAudioEvent, PulseAudioMachine } from "./processes/pulseaudio";
 import { createPulseAudioMachine } from "./processes/pulseaudio";
 import type { XvfbEvent, XvfbMachine } from "./processes/xvfb";
 import { createXvfbMachine } from "./processes/xvfb";
 import { logger } from "./util/logger";
+import { sleep } from "./util/sleep";
 
 // const args = arg({
 //     "--sleep": Boolean,
@@ -22,6 +25,7 @@ interface CompositorContext {
     xvfbMachine: ActorRefFrom<XvfbMachine> | null;
     pulseAudioMachine: ActorRefFrom<PulseAudioMachine> | null;
     chromiumMachine: ActorRefFrom<ChromiumMachine> | null;
+    ffmpegMachine: ActorRefFrom<FFmpegMachine> | null;
 }
 
 type CompositorEvent = { type: "CAPTURE" };
@@ -41,17 +45,20 @@ async function main(): Promise<void> {
     const xvfbMachine = createXvfbMachine(display);
     const pulseAudioMachine = createPulseAudioMachine(display);
     const chromiumMachine = createChromiumMachine(display);
+    const ffmpegMachine = createFFmpegMachine(display);
 
     const compositorMachine = createMachine<
         CompositorContext,
-        CompositorEvent | XvfbEvent | PulseAudioEvent | ChromiumEvent
+        CompositorEvent | XvfbEvent | PulseAudioEvent | ChromiumEvent | FFmpegEvent
     >({
-        id: "parent",
+        id: "compositor",
+        description: "Compositor state machine",
         initial: "startingXvfb",
         context: {
             xvfbMachine: null,
             pulseAudioMachine: null,
             chromiumMachine: null,
+            ffmpegMachine: null,
         },
         states: {
             startingXvfb: {
@@ -93,14 +100,38 @@ async function main(): Promise<void> {
                     },
                 },
             },
-            ready: {},
-            capturing: {},
+            ready: {
+                on: {
+                    CAPTURE: {
+                        target: "capturing",
+                    },
+                },
+            },
+            capturing: {
+                entry: xstate.assign({
+                    ffmpegMachine: (_context) =>
+                        xstate.spawn(ffmpegMachine, {
+                            name: "ffmpeg",
+                        }),
+                }),
+                on: {
+                    "FFMPEG.STOPPED": {
+                        target: "ready",
+                    },
+                },
+            },
         },
     });
 
-    interpret(compositorMachine, { devTools: config.enableXStateInspector })
+    const compositor = interpret(compositorMachine, { devTools: config.enableXStateInspector })
         .onTransition((state) => logger.info(state.value))
         .start();
+
+    compositor.onTransition((state, _event) => {
+        if (state.value === "ready") {
+            sleep;
+        }
+    });
 
     // parentService.send({ type: "LOCAL.WAKE" });
 }

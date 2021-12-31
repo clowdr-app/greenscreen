@@ -121,6 +121,7 @@ export const createXvfbMachine = (displayNumber: string): StateMachine<XvfbConte
     const childLogger = logger.child({ module: "xvfb" });
     return createMachine<XvfbContext, XvfbEvent, XvfbTypestate>(
         {
+            id: "xvfb",
             initial: "validating",
             context: {
                 displayNumber,

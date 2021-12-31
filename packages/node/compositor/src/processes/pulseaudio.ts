@@ -117,6 +117,7 @@ export const createPulseAudioMachine = (
 ): StateMachine<PulseAudioContext, any, PulseAudioEvent> => {
     const childLogger = logger.child({ module: "pulseaudio" });
     return createMachine<PulseAudioContext, PulseAudioEvent, PulseAudioTypestate>({
+        id: "pulseaudio",
         initial: "starting",
         context: {
             displayNumber,

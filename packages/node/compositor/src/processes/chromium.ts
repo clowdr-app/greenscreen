@@ -89,6 +89,7 @@ async function startChromium(logger: pino.Logger, displayNumber: string): Promis
 export function createChromiumMachine(displayNumber: string): StateMachine<ChromiumContext, any, ChromiumEvent> {
     const childLogger = logger.child({ module: "chromium" });
     return createMachine<ChromiumContext, ChromiumEvent, ChromiumTypestate>({
+        id: "chromium",
         initial: "starting",
         context: {
             displayNumber,
