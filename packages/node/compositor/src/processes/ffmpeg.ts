@@ -1,5 +1,4 @@
-import { spawn } from "node:child_process";
-import { createInterface } from "node:readline";
+import { launch } from "../util/launcher";
 import { logger } from "../util/logger";
 
 type mainOptions = {
@@ -126,43 +125,7 @@ export async function startFFmpeg({
         ...outputArgs,
     ];
 
-    try {
-        const ffmpegLogger = logger.child({ module: "ffmpeg" });
-        ffmpegLogger.info({ ffmpegArgsNonSecret }, "launching ffmpeg with arguments");
-        const ffmpegProcess = spawn("ffmpeg", [...ffmpegArgsNonSecret, rtmpURL], {
-            shell: false,
-            env: {
-                ...process.env,
-                DISPLAY: displayNumber,
-            },
-        });
-        const rlStdout = createInterface(ffmpegProcess.stdout);
-        const rlStderr = createInterface(ffmpegProcess.stderr);
-        rlStdout.on("line", (msg) => ffmpegLogger.info(msg));
-        rlStderr.on("line", (msg) => ffmpegLogger.error(msg));
-        ffmpegProcess.on("close", (code, signal) => {
-            ffmpegLogger.info({ code, signal }, "FFmpeg close");
-            // rlStdout.close();
-            // rlStderr.close();
-        });
-        ffmpegProcess.on("disconnect", () => {
-            ffmpegLogger.info("FFmpeg disconnect");
-        });
-        ffmpegProcess.on("error", (err) => {
-            ffmpegLogger.error({ err }, "FFmpeg error");
-        });
-        ffmpegProcess.on("exit", (code, signal) => {
-            ffmpegLogger.info({ code, signal }, "FFmpeg exit");
-        });
-        ffmpegProcess.on("message", (msg, _handle) => {
-            ffmpegLogger.info({ msg }, "FFmpeg message");
-        });
-        ffmpegProcess.on("spawn", () => {
-            ffmpegLogger.info("FFmpeg spawn");
-        });
-    } catch (err) {
-        const msg = "Failed to launch ffmpeg";
-        logger.error({ err }, msg);
-        throw new Error(msg);
-    }
+    const ffmpegLogger = logger.child({ module: "ffmpeg" });
+    ffmpegLogger.info({ ffmpegArgsNonSecret }, "launching ffmpeg with arguments");
+    launch("ffmpeg", [...ffmpegArgsNonSecret, rtmpURL], { DISPLAY: displayNumber }, ffmpegLogger);
 }
