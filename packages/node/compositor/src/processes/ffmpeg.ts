@@ -61,8 +61,8 @@ export async function startFFmpeg({
     audioSourceDevice = "default",
     audioInputMaxQueuedPackets = 512,
     audioChannelCount = 2,
-    audioBitrateKbps = 160,
-    audioSamplingFreqHz = 44100,
+    audioBitrateKbps = 128,
+    audioSamplingFreqHz = 48000,
 }: mainOptions & x11grabOptions & x264Options & audioOptions): Promise<void> {
     if (screenHeight && !screenWidth) {
         screenWidth = Math.ceil((screenHeight * 16) / 9);
