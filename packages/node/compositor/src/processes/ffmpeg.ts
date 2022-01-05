@@ -10,9 +10,10 @@ import { compileOptions, makeDefaultOptions } from "./ffmpeg-config";
 
 export type FFmpegEvent =
     | { type: "EXIT" }
-    | { type: "ERROR"; data: unknown | Error }
+    | { type: "PROCESS.EXIT" }
+    | { type: "PROCESS.ERROR"; data: unknown | Error }
     | { type: "FFMPEG.STARTED" }
-    | { type: "FFMPEG.STOPPED" };
+    | { type: "FFMPEG.EXITED" };
 interface FFmpegContext {
     logger: pino.Logger;
     displayNumber: string;
@@ -95,21 +96,21 @@ const startCallback: (
         rlStderr.on("line", (msg) => context.logger.error(msg));
         ffmpegProcess.on("close", (code, signal) => {
             context.logger.info({ code, signal }, "FFmpeg close");
-            callback("EXIT");
+            callback("PROCESS.EXIT");
             // rlStdout.close();
             // rlStderr.close();
         });
         ffmpegProcess.on("disconnect", () => {
             context.logger.info("FFmpeg disconnect");
-            callback("EXIT");
+            callback("PROCESS.EXIT");
         });
         ffmpegProcess.on("error", (err) => {
             context.logger.error({ err }, "FFmpeg error");
-            callback({ data: err, type: "ERROR" });
+            callback({ data: err, type: "PROCESS.ERROR" });
         });
         ffmpegProcess.on("exit", (code, signal) => {
             context.logger.info({ code, signal }, "FFmpeg exit");
-            callback("EXIT");
+            callback("PROCESS.EXIT");
         });
         ffmpegProcess.on("message", (msg, _handle) => {
             context.logger.info({ msg }, "FFmpeg message");
@@ -121,7 +122,7 @@ const startCallback: (
         context.logger.error({ err }, "FFmpeg error");
         callback({
             data: err,
-            type: "ERROR",
+            type: "PROCESS.ERROR",
         });
     }
 };
@@ -136,8 +137,14 @@ export const createFFmpegMachine = (displayNumber: string): StateMachine<FFmpegC
                 displayNumber,
                 logger: childLogger,
             },
-            onDone: {
-                actions: xstate.send({ type: "STOP" }, { to: "processRef" }),
+            on: {
+                "PROCESS.EXIT": "exited",
+                "PROCESS.ERROR": {
+                    target: "error",
+                    actions: xstate.assign({
+                        error: (_context, event) => event.data,
+                    }),
+                },
             },
             states: {
                 starting: {
@@ -148,7 +155,8 @@ export const createFFmpegMachine = (displayNumber: string): StateMachine<FFmpegC
                                     startCallback(
                                         makeDefaultOptions("/var/greenscreen/screen.webm", context.displayNumber),
                                         context
-                                    )
+                                    ),
+                                    { name: "ffmpegProcess" }
                                 ),
                         }),
                     ],
@@ -159,14 +167,17 @@ export const createFFmpegMachine = (displayNumber: string): StateMachine<FFmpegC
                 running: {
                     entry: [xstate.sendParent("FFMPEG.STARTED")],
                     on: {
-                        EXIT: "exited",
+                        EXIT: "exiting",
                     },
+                },
+                exiting: {
+                    entry: xstate.send({ type: "STOP" }, { to: "ffmpegProcess" }),
                 },
                 error: {
                     type: "final",
                 },
                 exited: {
-                    entry: [xstate.sendParent("FFMPEG.STOPPED")],
+                    entry: [xstate.actions.stop("ffmpegProcess"), xstate.sendParent({ type: "FFMPEG.EXITED" })],
                     type: "final",
                 },
             },

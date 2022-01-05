@@ -18,6 +18,7 @@ async function main(): Promise<void> {
     const args = arg({
         "--debug": Boolean, // Enable Node.js debugging and break immediately on startup
         "--inspect-xstate": Boolean, // Enable XState inspector on port 8888
+        "--log-level": Number, // Set Pino log level. e.g. errors only = 50, trace + above = 10. Default 30.
     });
     const cwd = process.cwd();
     const tempDir = join(cwd, "build", "temp");
@@ -50,6 +51,8 @@ async function main(): Promise<void> {
             // ↑ Enable inspect-brk Node option if debug enabled. Specify IP 0.0.0.0 to allow non-localhost debugger to attach.
             ...(args["--inspect-xstate"] ? ["-e", "GSC_XSTATE_INSPECT_ENABLED=true"] : []),
             // ↑ Enable XState inspector option.
+            ...(args["--log-level"] ? ["-e", `GSC_LOG_LEVEL=${args["--log-level"]}`] : []),
+            // ↑ Set the Pino log level.
             "--name=midspace-compositor",
             "midspace/compositor",
         ],

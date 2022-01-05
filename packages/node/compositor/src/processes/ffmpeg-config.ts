@@ -62,7 +62,7 @@ export function makeDefaultOptions(outputFile: string, displayNumber: string): F
     return {
         core: {
             outputFile,
-            outputDuration: "00:01:00",
+            outputDuration: "00:00:20",
             promptOnOverwrite: false,
         },
         audioInput: {

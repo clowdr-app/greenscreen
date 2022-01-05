@@ -8,8 +8,10 @@ import { logger } from "../util/logger";
 
 export type PulseAudioEvent =
     | { type: "EXIT" }
-    | { type: "ERROR"; data: unknown | Error }
-    | { type: "PULSEAUDIO.STARTED" };
+    | { type: "PROCESS.EXIT" }
+    | { type: "PROCESS.ERROR"; data: unknown | Error }
+    | { type: "PULSEAUDIO.STARTED" }
+    | { type: "PULSEAUDIO.EXITED" };
 
 interface PulseAudioContext {
     logger: pino.Logger;
@@ -66,7 +68,9 @@ const startCallback: (context: PulseAudioContext) => InvokeCallback<PulseAudioPr
                 switch (event.type) {
                     case "STOP": {
                         context.logger.info("Terminating PulseAudio process");
-                        pulseAudioProcess.kill();
+                        if (pulseAudioProcess.kill()) {
+                            callback("PROCESS.EXIT");
+                        }
                         break;
                     }
                     default: {
@@ -83,19 +87,23 @@ const startCallback: (context: PulseAudioContext) => InvokeCallback<PulseAudioPr
 
             pulseAudioProcess.on("close", (code, signal) => {
                 context.logger.info({ code, signal }, "PulseAudio close");
-                callback("EXIT");
+                callback("PROCESS.EXIT");
             });
             pulseAudioProcess.on("disconnect", () => {
                 context.logger.info("PulseAudio disconnect");
-                callback("EXIT");
+                callback("PROCESS.EXIT");
             });
             pulseAudioProcess.on("error", (err) => {
                 context.logger.error({ err }, "PulseAudio error");
-                callback({ data: err, type: "ERROR" });
+                callback({ data: err, type: "PROCESS.ERROR" });
             });
             pulseAudioProcess.on("exit", (code, signal) => {
                 context.logger.info({ code, signal }, "PulseAudio exit");
-                callback("EXIT");
+                if (code === 0) {
+                    callback("PROCESS.EXIT");
+                } else {
+                    callback({ data: new Error(`PulseAudio exited with code ${code}`), type: "PROCESS.ERROR" });
+                }
             });
             pulseAudioProcess.on("message", (msg, _handle) => {
                 context.logger.info({ msg }, "PulseAudio message");
@@ -107,7 +115,7 @@ const startCallback: (context: PulseAudioContext) => InvokeCallback<PulseAudioPr
             context.logger.error({ err }, "PulseAudio error");
             callback({
                 data: err,
-                type: "ERROR",
+                type: "PROCESS.ERROR",
             });
         }
     };
@@ -123,30 +131,43 @@ export const createPulseAudioMachine = (
             displayNumber,
             logger: childLogger,
         },
-        onDone: {
-            actions: xstate.send({ type: "STOP" }, { to: "processRef" }),
+        on: {
+            "PROCESS.EXIT": "exited",
+            "PROCESS.ERROR": {
+                target: "error",
+                actions: xstate.assign({
+                    error: (_context, event) => event.data,
+                }),
+            },
         },
         states: {
             starting: {
                 entry: [
                     xstate.assign({
-                        processRef: (context) => xstate.spawn(startCallback(context)),
+                        processRef: (context) => xstate.spawn(startCallback(context), { name: "pulseAudioProcess" }),
                     }),
                 ],
                 after: {
                     2000: { target: "running" },
                 },
+                on: {
+                    EXIT: "exiting",
+                },
             },
             running: {
                 entry: [xstate.sendParent("PULSEAUDIO.STARTED")],
                 on: {
-                    EXIT: "exited",
+                    EXIT: "exiting",
                 },
+            },
+            exiting: {
+                entry: xstate.send({ type: "STOP" }, { to: "pulseAudioProcess" }),
             },
             error: {
                 type: "final",
             },
             exited: {
+                entry: [xstate.actions.stop("pulseAudioProcess"), xstate.sendParent("PULSEAUDIO.EXITED")],
                 type: "final",
             },
         },

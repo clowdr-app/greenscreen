@@ -8,7 +8,12 @@ import { assign, createMachine } from "xstate";
 import { logger } from "../util/logger";
 import { pathExists } from "../util/path-exists";
 
-export type XvfbEvent = { type: "EXIT" } | { type: "ERROR"; data: unknown | Error } | { type: "XVFB.STARTED" };
+export type XvfbEvent =
+    | { type: "EXIT" }
+    | { type: "PROCESS.EXIT" }
+    | { type: "PROCESS.ERROR"; data: unknown | Error }
+    | { type: "XVFB.STARTED" }
+    | { type: "XVFB.EXITED" };
 interface XvfbContext {
     logger: pino.Logger;
     displayNumber: string;
@@ -71,7 +76,9 @@ const startCallback: (context: XvfbContext) => InvokeCallback<XvfbProcessCommand
                 switch (event.type) {
                     case "STOP": {
                         context.logger.info("Terminating Xvfb process");
-                        xvfbProcess.kill();
+                        if (xvfbProcess.kill()) {
+                            callback("PROCESS.EXIT");
+                        }
                         break;
                     }
                     default: {
@@ -88,19 +95,23 @@ const startCallback: (context: XvfbContext) => InvokeCallback<XvfbProcessCommand
 
             xvfbProcess.on("close", (code, signal) => {
                 context.logger.info({ code, signal }, "Xvfb close");
-                callback("EXIT");
+                callback("PROCESS.EXIT");
             });
             xvfbProcess.on("disconnect", () => {
                 context.logger.info("Xvfb disconnect");
-                callback("EXIT");
+                callback("PROCESS.EXIT");
             });
             xvfbProcess.on("error", (err) => {
                 context.logger.error({ err }, "Xvfb error");
-                callback({ data: err, type: "ERROR" });
+                callback({ data: err, type: "PROCESS.ERROR" });
             });
             xvfbProcess.on("exit", (code, signal) => {
                 context.logger.info({ code, signal }, "Xvfb exit");
-                callback("EXIT");
+                if (code === 0) {
+                    callback("PROCESS.EXIT");
+                } else {
+                    callback({ data: new Error(`Xvfb exited with code ${code}`), type: "PROCESS.ERROR" });
+                }
             });
             xvfbProcess.on("message", (msg, _handle) => {
                 context.logger.info({ msg }, "Xvfb message");
@@ -112,7 +123,7 @@ const startCallback: (context: XvfbContext) => InvokeCallback<XvfbProcessCommand
             context.logger.error({ err }, "Xvfb error");
             callback({
                 data: err,
-                type: "ERROR",
+                type: "PROCESS.ERROR",
             });
         }
     };
@@ -127,8 +138,14 @@ export const createXvfbMachine = (displayNumber: string): StateMachine<XvfbConte
                 displayNumber,
                 logger: childLogger,
             },
-            onDone: {
-                actions: xstate.send({ type: "STOP" }, { to: "processRef" }),
+            on: {
+                "PROCESS.EXIT": "exited",
+                "PROCESS.ERROR": {
+                    target: "error",
+                    actions: assign({
+                        error: (_context, event) => event.data,
+                    }),
+                },
             },
             states: {
                 validating: {
@@ -148,16 +165,22 @@ export const createXvfbMachine = (displayNumber: string): StateMachine<XvfbConte
                             }),
                         },
                     },
+                    on: {
+                        EXIT: "exiting",
+                    },
                 },
                 starting: {
                     entry: [
                         assign({
-                            processRef: (context) => xstate.spawn(startCallback(context)),
+                            processRef: (context) => xstate.spawn(startCallback(context), { name: "xvfbProcess" }),
                         }),
                     ],
                     invoke: {
                         id: "waitLock",
-                        src: (_context, _event) => waitUntil(() => pathExists(`/tmp/.X${displayNumber}-lock`)),
+                        src: (_context, _event) =>
+                            waitUntil(() => pathExists(`/tmp/.X${displayNumber}-lock`), {
+                                timeout: 15000,
+                            }),
                         onDone: "running",
                         onError: {
                             target: "error",
@@ -166,17 +189,24 @@ export const createXvfbMachine = (displayNumber: string): StateMachine<XvfbConte
                             }),
                         },
                     },
+                    on: {
+                        EXIT: "exiting",
+                    },
                 },
                 running: {
                     entry: [xstate.sendParent("XVFB.STARTED")],
                     on: {
-                        EXIT: "exited",
+                        EXIT: "exiting",
                     },
+                },
+                exiting: {
+                    entry: xstate.send({ type: "STOP" }, { to: "xvfbProcess" }),
                 },
                 error: {
                     type: "final",
                 },
                 exited: {
+                    entry: [xstate.actions.stop("xvfbProcess"), xstate.sendParent("XVFB.EXITED")],
                     type: "final",
                 },
             },
