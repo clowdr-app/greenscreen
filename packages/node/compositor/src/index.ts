@@ -1,14 +1,13 @@
 import * as ws from "ws";
 import { interpret } from "xstate";
-import { resolveConfig } from "./config";
+import { makeApplicationContext } from "./config/application-context";
+import { resolveConfig } from "./config/config";
 import { createTestController } from "./controller/test-controller";
 import { logger } from "./util/logger";
 
-export const display = process.env.DISPLAY ?? "1";
-logger.info({ display }, "Display number");
-
 async function main(): Promise<void> {
     const config = resolveConfig();
+    const applicationContext = makeApplicationContext(config);
 
     if (config.enableXStateInspector) {
         const server = await import("@xstate/inspect/lib/server");
@@ -18,13 +17,13 @@ async function main(): Promise<void> {
                 port,
             }),
         });
-        logger.info({ port }, "XState inspector created");
+        applicationContext.logger.info({ port }, "XState inspector created");
     }
 
-    const testController = createTestController(display);
+    const testController = createTestController(applicationContext);
 
     interpret(testController, { devTools: config.enableXStateInspector })
-        .onTransition((state) => logger.info(state.value))
+        .onTransition((state) => applicationContext.logger.info(state.value))
         .start();
 }
 

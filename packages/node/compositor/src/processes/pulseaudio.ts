@@ -4,7 +4,7 @@ import type pino from "pino";
 import type { ActorRef, InvokeCallback, StateMachine } from "xstate";
 import * as xstate from "xstate";
 import { createMachine } from "xstate";
-import { logger } from "../util/logger";
+import type { ApplicationContext } from "../config/application-context";
 
 export type PulseAudioEvent =
     | { type: "EXIT" }
@@ -15,7 +15,7 @@ export type PulseAudioEvent =
 
 interface PulseAudioContext {
     logger: pino.Logger;
-    displayNumber: string;
+    displayNumber: number;
     error?: unknown;
     processRef?: ActorRef<PulseAudioEvent, PulseAudioProcessCommand>;
 }
@@ -83,7 +83,7 @@ const startCallback: (context: PulseAudioContext) => InvokeCallback<PulseAudioPr
             const rlStdout = createInterface(pulseAudioProcess.stdout);
             const rlStderr = createInterface(pulseAudioProcess.stderr);
             rlStdout.on("line", (msg) => context.logger.info(msg));
-            rlStderr.on("line", (msg) => context.logger.error(msg));
+            rlStderr.on("line", (msg) => context.logger.warn(msg));
 
             pulseAudioProcess.on("close", (code, signal) => {
                 context.logger.info({ code, signal }, "PulseAudio close");
@@ -121,15 +121,15 @@ const startCallback: (context: PulseAudioContext) => InvokeCallback<PulseAudioPr
     };
 
 export const createPulseAudioMachine = (
-    displayNumber: string
+    applicationContext: ApplicationContext
 ): StateMachine<PulseAudioContext, any, PulseAudioEvent> => {
-    const childLogger = logger.child({ module: "pulseaudio" });
+    const logger = applicationContext.logger.child({ module: "pulseaudio" });
     return createMachine<PulseAudioContext, PulseAudioEvent, PulseAudioTypestate>({
         id: "pulseaudio",
         initial: "starting",
         context: {
-            displayNumber,
-            logger: childLogger,
+            displayNumber: applicationContext.config.display,
+            logger,
         },
         on: {
             "PROCESS.EXIT": "exited",

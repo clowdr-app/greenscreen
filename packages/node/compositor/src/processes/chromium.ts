@@ -4,7 +4,7 @@ import { createInterface } from "readline";
 import type { ActorRef, InvokeCallback, StateMachine } from "xstate";
 import * as xstate from "xstate";
 import { createMachine } from "xstate";
-import { logger } from "../util/logger";
+import type { ApplicationContext } from "../config/application-context";
 
 export type ChromiumEvent =
     | { type: "EXIT" }
@@ -15,7 +15,7 @@ export type ChromiumEvent =
     | { type: "CHROMIUM.EXITED" };
 interface ChromiumContext {
     logger: pino.Logger;
-    displayNumber: string;
+    displayNumber: number;
     error?: unknown;
     processRef?: ActorRef<ChromiumEvent, ChromiumProcessCommand>;
 }
@@ -75,7 +75,7 @@ function startCallback(context: ChromiumContext): InvokeCallback<ChromiumProcess
                     "--window-size=1280,720",
                     "--enable-logging=stderr",
                     // "--no-sandbox",
-                    "--v=1",
+                    "--v=0",
                     // "--app=https://shattereddisk.github.io/rickroll/rickroll.mp4",
                     // "--app=https://www.youtube.com/watch?v=ucZl6vQ_8Uo", // audio-video sync - one minute
                     "--app=https://www.youtube.com/watch?v=4S5KBlieT0I", // audio-video sync - 30 minutes
@@ -109,11 +109,11 @@ function startCallback(context: ChromiumContext): InvokeCallback<ChromiumProcess
                 const proc = browser.process();
                 if (proc?.stdout) {
                     const rlStdout = createInterface(proc.stdout);
-                    rlStdout.on("line", (msg) => logger.trace(msg));
+                    rlStdout.on("line", (msg) => context.logger.trace(msg));
                 }
                 if (proc?.stderr) {
                     const rlStderr = createInterface(proc.stderr);
-                    rlStderr.on("line", (msg) => logger.debug(msg));
+                    rlStderr.on("line", (msg) => context.logger.debug(msg));
                 }
                 browser.on("disconnected", (event) => {
                     context.logger.error({ event }, "Chromium disconnected unexpectedly");
@@ -136,14 +136,16 @@ function startCallback(context: ChromiumContext): InvokeCallback<ChromiumProcess
     };
 }
 
-export function createChromiumMachine(displayNumber: string): StateMachine<ChromiumContext, any, ChromiumEvent> {
-    const childLogger = logger.child({ module: "chromium" });
+export function createChromiumMachine(
+    applicationContext: ApplicationContext
+): StateMachine<ChromiumContext, any, ChromiumEvent> {
+    const logger = applicationContext.logger.child({ module: "chromium" });
     return createMachine<ChromiumContext, ChromiumEvent, ChromiumTypestate>({
         id: "chromium",
         initial: "starting",
         context: {
-            displayNumber,
-            logger: childLogger,
+            displayNumber: applicationContext.config.display,
+            logger,
             processRef: undefined,
         },
         on: {

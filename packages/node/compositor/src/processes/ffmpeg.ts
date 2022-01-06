@@ -4,7 +4,7 @@ import type * as pino from "pino";
 import type { ActorRef, InvokeCallback, StateMachine } from "xstate";
 import * as xstate from "xstate";
 import { createMachine } from "xstate";
-import { logger } from "../util/logger";
+import type { ApplicationContext } from "../config/application-context";
 import type { FFmpegOptions } from "./ffmpeg-config";
 import { compileOptions, makeTestFileOptions } from "./ffmpeg-config";
 
@@ -16,7 +16,7 @@ export type FFmpegEvent =
     | { type: "FFMPEG.EXITED" };
 interface FFmpegContext {
     logger: pino.Logger;
-    displayNumber: string;
+    displayNumber: number;
     error?: unknown;
     processRef?: ActorRef<FFmpegEvent, FFmpegProcessCommand>;
 }
@@ -67,12 +67,12 @@ const startCallback: (
     const [args, outputFile] = compileOptions(options);
 
     try {
-        context.logger.info({ args }, "Launching FFmpeg");
+        context.logger.debug({ args }, "Launching FFmpeg");
         const ffmpegProcess = spawn("ffmpeg", [...args, outputFile], {
             shell: false,
             env: {
                 ...process.env,
-                DISPLAY: options.videoInput.options.displayNumber,
+                DISPLAY: options.videoInput.options.displayNumber.toString(),
             },
         });
 
@@ -93,7 +93,7 @@ const startCallback: (
         const rlStdout = createInterface(ffmpegProcess.stdout);
         const rlStderr = createInterface(ffmpegProcess.stderr);
         rlStdout.on("line", (msg) => context.logger.info(msg));
-        rlStderr.on("line", (msg) => context.logger.error(msg));
+        rlStderr.on("line", (msg) => context.logger.warn(msg));
         ffmpegProcess.on("close", (code, signal) => {
             context.logger.info({ code, signal }, "FFmpeg close");
             callback("PROCESS.EXIT");
@@ -127,15 +127,17 @@ const startCallback: (
     }
 };
 
-export const createFFmpegMachine = (displayNumber: string): StateMachine<FFmpegContext, any, FFmpegEvent> => {
-    const childLogger = logger.child({ module: "ffmpeg" });
+export const createFFmpegMachine = (
+    applicationContext: ApplicationContext
+): StateMachine<FFmpegContext, any, FFmpegEvent> => {
+    const logger = applicationContext.logger.child({ module: "ffmpeg" });
     return createMachine<FFmpegContext, FFmpegEvent, FFmpegTypestate>(
         {
             id: "ffmpeg",
             initial: "starting",
             context: {
-                displayNumber,
-                logger: childLogger,
+                displayNumber: applicationContext.config.display,
+                logger,
             },
             on: {
                 "PROCESS.EXIT": "exited",

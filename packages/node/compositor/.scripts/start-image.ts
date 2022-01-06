@@ -1,9 +1,10 @@
-import arg from "arg";
 import { spawn } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import normalizePath from "normalize-path";
 import open from "open";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 import { sleep } from "../src/util/sleep";
 
 function dockerifyPath(path: string): string {
@@ -15,11 +16,36 @@ function dockerifyPath(path: string): string {
 }
 
 async function main(): Promise<void> {
-    const args = arg({
-        "--debug": Boolean, // Enable Node.js debugging and break immediately on startup
-        "--inspect-xstate": Boolean, // Enable XState inspector on port 8888
-        "--log-level": Number, // Set Pino log level. e.g. errors only = 50, trace + above = 10. Default 30.
-    });
+    const args = yargs(hideBin(process.argv))
+        .scriptName("start-image")
+        .options({
+            debug: {
+                boolean: true,
+                default: false,
+            },
+            "inspect-xstate": {
+                boolean: true,
+                default: false,
+            },
+            "log-level": {
+                string: true,
+                choices: ["trace", "debug", "info", "warn", "error", "fatal"],
+                default: "info",
+            },
+            "output-destination": {
+                string: true,
+                default: "screen.mp4",
+                description:
+                    "Name of the destination for the composited video. In test-file mode, this is a filename. In rtmp mode, this is an RTMP Push URL.",
+            },
+            mode: {
+                choices: ["test-file", "test-rtmp"],
+                description: "Mode in which to run the compositor.",
+            },
+        })
+        .strict()
+        .parseSync();
+
     const cwd = process.cwd();
     const tempDir = join(cwd, "build", "temp");
 
@@ -29,7 +55,7 @@ async function main(): Promise<void> {
         recursive: true,
     });
 
-    spawn(
+    const dockerProc = spawn(
         `docker`,
         [
             "run",
@@ -37,8 +63,8 @@ async function main(): Promise<void> {
             "-it",
             "--mount",
             `type=bind,source=${dockerifyPath(tempDir)},target=/var/greenscreen`,
-            ...(args["--debug"] ? ["-p", "9229:9229"] : []),
-            ...(args["--inspect-xstate"] ? ["-p", "8888:8888"] : []),
+            ...(args.debug ? ["-p", "9229:9229"] : []),
+            ...(args.inspectXstate ? ["-p", "8888:8888"] : []),
             // ↑ Expose Node default debug port if debug enabled.
             "--cap-add",
             "SYS_ADMIN",
@@ -47,19 +73,28 @@ async function main(): Promise<void> {
             // "seccomp=src/resources/chrome.json",
             // ↑ An tighter alternative to the SYS_ADMIN permission - disabled for now because
             // it's rather more complicated to supply to ECS
-            ...(args["--debug"] ? ["-e", "NODE_OPTIONS=--inspect-brk=0.0.0.0"] : []),
+            ...(args.debug ? ["-e", "NODE_OPTIONS=--inspect-brk=0.0.0.0"] : []),
             // ↑ Enable inspect-brk Node option if debug enabled. Specify IP 0.0.0.0 to allow non-localhost debugger to attach.
-            ...(args["--inspect-xstate"] ? ["-e", "GSC_XSTATE_INSPECT_ENABLED=true"] : []),
+            ...(args.inspectXstate ? ["-e", "GSC_XSTATE_INSPECT_ENABLED=true"] : []),
             // ↑ Enable XState inspector option.
-            ...(args["--log-level"] ? ["-e", `GSC_LOG_LEVEL=${args["--log-level"]}`] : []),
+            ...(args.logLevel ? ["-e", `GSC_LOG_LEVEL=${args.logLevel}`] : []),
             // ↑ Set the Pino log level.
+            ...(args.mode ? ["-e", `GSC_MODE=${args.mode}`] : []),
+            ...(args.outputDestination ? ["-e", `GSC_OUTPUT_DESTINATION=${args.outputDestination}`] : []),
             "--name=midspace-compositor",
             "midspace/compositor",
         ],
-        { stdio: ["inherit", "inherit", "inherit"] }
+        { stdio: ["inherit", "pipe", "inherit"] }
     );
 
-    if (args["--inspect-xstate"]) {
+    const pinoProc = spawn(`pino-pretty`, ["-t", "SYS:HH:MM:ss.l", "-S", "-i", "hostname,pid", "--crlf"], {
+        shell: true,
+        stdio: ["pipe", "inherit", "inherit"],
+    });
+
+    dockerProc.stdout.pipe(pinoProc.stdin);
+
+    if (args.inspectXstate) {
         await sleep(5000);
         await open("https://statecharts.io/inspect?server=localhost:8888");
     }

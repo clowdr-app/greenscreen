@@ -5,7 +5,7 @@ import type pino from "pino";
 import type { ActorRef, InvokeCallback, StateMachine } from "xstate";
 import * as xstate from "xstate";
 import { assign, createMachine } from "xstate";
-import { logger } from "../util/logger";
+import type { ApplicationContext } from "../config/application-context";
 import { pathExists } from "../util/path-exists";
 
 export type XvfbEvent =
@@ -16,7 +16,7 @@ export type XvfbEvent =
     | { type: "XVFB.EXITED" };
 interface XvfbContext {
     logger: pino.Logger;
-    displayNumber: string;
+    displayNumber: number;
     error?: unknown;
     processRef?: ActorRef<XvfbEvent, XvfbProcessCommand>;
 }
@@ -91,7 +91,7 @@ const startCallback: (context: XvfbContext) => InvokeCallback<XvfbProcessCommand
             const rlStdout = createInterface(xvfbProcess.stdout);
             const rlStderr = createInterface(xvfbProcess.stderr);
             rlStdout.on("line", (msg) => context.logger.info(msg));
-            rlStderr.on("line", (msg) => context.logger.error(msg));
+            rlStderr.on("line", (msg) => context.logger.warn(msg));
 
             xvfbProcess.on("close", (code, signal) => {
                 context.logger.info({ code, signal }, "Xvfb close");
@@ -128,15 +128,17 @@ const startCallback: (context: XvfbContext) => InvokeCallback<XvfbProcessCommand
         }
     };
 
-export const createXvfbMachine = (displayNumber: string): StateMachine<XvfbContext, any, XvfbEvent> => {
-    const childLogger = logger.child({ module: "xvfb" });
+export const createXvfbMachine = (
+    applicationContext: ApplicationContext
+): StateMachine<XvfbContext, any, XvfbEvent> => {
+    const logger = applicationContext.logger.child({ module: "xvfb" });
     return createMachine<XvfbContext, XvfbEvent, XvfbTypestate>(
         {
             id: "xvfb",
             initial: "validating",
             context: {
-                displayNumber,
-                logger: childLogger,
+                displayNumber: applicationContext.config.display,
+                logger,
             },
             on: {
                 "PROCESS.EXIT": "exited",
@@ -152,8 +154,8 @@ export const createXvfbMachine = (displayNumber: string): StateMachine<XvfbConte
                     entry: [(context) => context.logger.info("Xvfb validating")],
                     invoke: {
                         id: "testLock",
-                        src: async (_context, _event) => {
-                            if (await pathExists(`/tmp/.X${displayNumber}-lock`)) {
+                        src: async (context, _event) => {
+                            if (await pathExists(`/tmp/.X${context.displayNumber}-lock`)) {
                                 throw new Error("Display already locked");
                             }
                         },
@@ -177,8 +179,8 @@ export const createXvfbMachine = (displayNumber: string): StateMachine<XvfbConte
                     ],
                     invoke: {
                         id: "waitLock",
-                        src: (_context, _event) =>
-                            waitUntil(() => pathExists(`/tmp/.X${displayNumber}-lock`), {
+                        src: (context, _event) =>
+                            waitUntil(() => pathExists(`/tmp/.X${context.displayNumber}-lock`), {
                                 timeout: 15000,
                             }),
                         onDone: "running",

@@ -1,6 +1,6 @@
 {
     "extends": "./tsconfig.cjs.json",
-    "include": ["src/*/*", ".scripts/*", "src/processes/compositor.ts"],
+    "include": ["src/**/*", ".scripts/*"],
     "compilerOptions": {
         "rootDir": "./"
     }

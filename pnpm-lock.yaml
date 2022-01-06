@@ -74,6 +74,7 @@ importers:
       '@types/node': ^17.0.8
       '@types/normalize-path': ^3.0.0
       '@types/ws': ^8.2.2
+      '@types/yargs': ^17.0.8
       '@xstate/inspect': ^0.6.0
       arg: ^5.0.1
       async-wait-until: 2.0.12
@@ -90,6 +91,8 @@ importers:
       typescript: ^4.5.4
       ws: ^8.4.0
       xstate: ^4.27.0
+      yargs: ^17.3.1
+      zod: ^3.11.6
     dependencies:
       '@types/ws': 8.2.2
       '@xstate/inspect': 0.6.0_@types+ws@8.2.2+ws@8.4.0
@@ -98,9 +101,11 @@ importers:
       puppeteer-core: 13.0.1
       ws: 8.4.0
       xstate: 4.27.0
+      zod: 3.11.6
     devDependencies:
       '@types/node': 17.0.8
       '@types/normalize-path': 3.0.0
+      '@types/yargs': 17.0.8
       arg: 5.0.1
       dotenv-cli: 4.1.1
       execa: 5.1.1
@@ -111,6 +116,7 @@ importers:
       ts-node: 10.4.0_faf01e1d5a40372a98081522dcafc186
       tsc-watch: 4.6.0_typescript@4.5.4
       typescript: 4.5.4
+      yargs: 17.3.1
 
   packages/node/prisma:
     specifiers:
@@ -1881,6 +1887,12 @@ packages:
     resolution: {integrity: sha512-T8Yc9wt/5LbJyCaLiHPReJa0kApcIgJ7Bn735GjItUfh08Z1pJvu8QZqb9s+mMvKV6WUQRV7K2R46YbjMXTTJw==}
     dependencies:
       '@types/yargs-parser': 20.2.1
+
+  /@types/yargs/17.0.8:
+    resolution: {integrity: sha512-wDeUwiUmem9FzsyysEwRukaEdDNcwbROvQ9QGRKaLI6t+IltNzbn4/i4asmB10auvZGQCzSQ6t0GSczEThlUXw==}
+    dependencies:
+      '@types/yargs-parser': 20.2.1
+    dev: true
 
   /@types/yauzl/2.9.2:
     resolution: {integrity: sha512-8uALY5LTvSuHgloDVUvWP3pIauILm+8/0pDMokuDYIoNsOkSwd5AiHBTSEJjKTDcZr5z8UpgOWZkxBF4iJftoA==}
@@ -8280,6 +8292,19 @@ packages:
       yargs-parser: 21.0.0
     dev: true
 
+  /yargs/17.3.1:
+    resolution: {integrity: sha512-WUANQeVgjLbNsEmGk20f+nlHgOqzRFpiGWVaBrYGYIGANIIu3lWjoyi0fNlFmJkvfhCZ6BXINe7/W2O2bV4iaA==}
+    engines: {node: '>=12'}
+    dependencies:
+      cliui: 7.0.4
+      escalade: 3.1.1
+      get-caller-file: 2.0.5
+      require-directory: 2.1.1
+      string-width: 4.2.3
+      y18n: 5.0.8
+      yargs-parser: 21.0.0
+    dev: true
+
   /yauzl/2.10.0:
     resolution: {integrity: sha1-x+sXyT4RLLEIb6bY5R+wZnt5pfk=}
     dependencies:
@@ -8305,3 +8330,7 @@ packages:
       compress-commons: 4.1.1
       readable-stream: 3.6.0
     dev: true
+
+  /zod/3.11.6:
+    resolution: {integrity: sha512-daZ80A81I3/9lIydI44motWe6n59kRBfNzTuS2bfzVh1nAXi667TOTWWtatxyG+fwgNUiagSj/CWZwRRbevJIg==}
+    dev: false

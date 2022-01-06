@@ -4,7 +4,7 @@ interface CoreOptions {
 
 interface X11grabOptions {
     format: "x11grab";
-    displayNumber: string;
+    displayNumber: number;
     screenNumber?: string;
     drawMouse?: boolean;
 }
@@ -99,7 +99,7 @@ export interface FFmpegOptions {
 /**
  * Build a set of FFmpeg options that records the screen to a 20-second file on disk.
  */
-export function makeTestFileOptions(outputFile: string, displayNumber: string): FFmpegOptions {
+export function makeTestFileOptions(outputFile: string, displayNumber: number): FFmpegOptions {
     return {
         core: {
             promptOnOverwrite: false,

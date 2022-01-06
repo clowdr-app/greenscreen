@@ -2,7 +2,7 @@ import type * as pino from "pino";
 import type { ActorRefFrom, StateMachine } from "xstate";
 import * as xstate from "xstate";
 import { createMachine } from "xstate";
-import { logger } from "../util/logger";
+import type { ApplicationContext } from "../config/application-context";
 import type { ChromiumEvent, ChromiumMachine } from "./chromium";
 import { createChromiumMachine } from "./chromium";
 import type { FFmpegEvent, FFmpegMachine } from "./ffmpeg";
@@ -29,19 +29,21 @@ export type CompositorEvent =
 export type Event = CompositorEvent | XvfbEvent | PulseAudioEvent | ChromiumEvent | FFmpegEvent;
 export type CompositorMachine = StateMachine<CompositorContext, any, Event>;
 
-export function createCompositorMachine(displayNumber: string): StateMachine<CompositorContext, any, Event> {
-    const childLogger = logger.child({ module: "compositor" });
-    const xvfbMachine = createXvfbMachine(displayNumber);
-    const pulseAudioMachine = createPulseAudioMachine(displayNumber);
-    const chromiumMachine = createChromiumMachine(displayNumber);
-    const ffmpegMachine = createFFmpegMachine(displayNumber);
+export function createCompositorMachine(
+    applicationContext: ApplicationContext
+): StateMachine<CompositorContext, any, Event> {
+    const logger = applicationContext.logger.child({ module: "compositor" });
+    const xvfbMachine = createXvfbMachine(applicationContext);
+    const pulseAudioMachine = createPulseAudioMachine(applicationContext);
+    const chromiumMachine = createChromiumMachine(applicationContext);
+    const ffmpegMachine = createFFmpegMachine(applicationContext);
 
     return createMachine<CompositorContext, Event>({
         id: "compositor",
         description: "Compositor state machine",
         initial: "startingXvfb",
         context: {
-            logger: childLogger,
+            logger,
             xvfbMachine: null,
             pulseAudioMachine: null,
             chromiumMachine: null,

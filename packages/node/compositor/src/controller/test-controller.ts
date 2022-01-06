@@ -1,6 +1,7 @@
 import type { ActorRefFrom } from "xstate";
 import * as xstate from "xstate";
 import { createMachine } from "xstate";
+import type { ApplicationContext } from "../config/application-context";
 import type { CompositorMachine, Event } from "../processes/compositor";
 import { createCompositorMachine } from "../processes/compositor";
 
@@ -25,9 +26,9 @@ type TestControllerTypestate =
       };
 
 export function createTestController(
-    displayNumber: string
+    applicationContext: ApplicationContext
 ): any /*StateMachine<TestControllerContext, any, TestControllerEvent | Event>*/ {
-    const compositorMachine = createCompositorMachine(displayNumber);
+    const compositorMachine = createCompositorMachine(applicationContext);
 
     return createMachine<TestControllerContext, TestControllerEvent | Event, TestControllerTypestate>({
         id: "test-controller",
