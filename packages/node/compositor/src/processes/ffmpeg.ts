@@ -6,7 +6,7 @@ import * as xstate from "xstate";
 import { createMachine } from "xstate";
 import { logger } from "../util/logger";
 import type { FFmpegOptions } from "./ffmpeg-config";
-import { compileOptions, makeDefaultOptions } from "./ffmpeg-config";
+import { compileOptions, makeTestFileOptions } from "./ffmpeg-config";
 
 export type FFmpegEvent =
     | { type: "EXIT" }
@@ -153,7 +153,7 @@ export const createFFmpegMachine = (displayNumber: string): StateMachine<FFmpegC
                             processRef: (context) =>
                                 xstate.spawn(
                                     startCallback(
-                                        makeDefaultOptions("/var/greenscreen/screen.webm", context.displayNumber),
+                                        makeTestFileOptions("/var/greenscreen/screen.mp4", context.displayNumber),
                                         context
                                     ),
                                     { name: "ffmpegProcess" }
