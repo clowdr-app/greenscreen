@@ -64,11 +64,11 @@ const startCallback: (
     options: FFmpegOptions,
     context: FFmpegContext
 ) => InvokeCallback<FFmpegProcessCommand, FFmpegEvent> = (options, context) => (callback, onReceive) => {
-    const args = compileOptions(options);
+    const [args, outputFile] = compileOptions(options);
 
     try {
-        context.logger.info({ args }, "launching ffmpeg with arguments");
-        const ffmpegProcess = spawn("ffmpeg", args, {
+        context.logger.info({ args }, "Launching FFmpeg");
+        const ffmpegProcess = spawn("ffmpeg", [...args, outputFile], {
             shell: false,
             env: {
                 ...process.env,

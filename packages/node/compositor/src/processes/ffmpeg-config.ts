@@ -102,14 +102,16 @@ export function makeDefaultOptions(outputFile: string, displayNumber: string): F
     };
 }
 
-export function compileOptions(options: FFmpegOptions): string[] {
+export function compileOptions(options: FFmpegOptions): [args: string[], outputFile: string] {
     return [
-        ...compileVideoInputOptions(options.videoInput),
-        ...compileAudioInputOptions(options.audioInput),
-        ...compileVideoOutputOptions(options.videoOutput),
-        ...compileAudioOutputOptions(options.audioOutput),
-        ...(options.core.promptOnOverwrite ? [] : ["-y"]),
-        ...(options.core.outputDuration ? ["-t", options.core.outputDuration] : []),
+        [
+            ...compileVideoInputOptions(options.videoInput),
+            ...compileAudioInputOptions(options.audioInput),
+            ...compileVideoOutputOptions(options.videoOutput),
+            ...compileAudioOutputOptions(options.audioOutput),
+            ...(options.core.promptOnOverwrite ? [] : ["-y"]),
+            ...(options.core.outputDuration ? ["-t", options.core.outputDuration] : []),
+        ],
         options.core.outputFile,
     ];
 }
