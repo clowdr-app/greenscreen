@@ -129,9 +129,9 @@ export function makeTestRtmpOptions(rtmpUrl: string, displayNumber: number): FFm
             },
         },
         audioOutput: {
-            bitrateKbps: 160,
+            bitrateKbps: 128,
             codec: "aac",
-            samplingFreqHz: 44100,
+            samplingFreqHz: 48000,
         },
         videoOutput: {
             bitrateKbps: 3000,
@@ -192,9 +192,9 @@ export function makeTestFileOptions(outputFile: string, displayNumber: number): 
             },
         },
         audioOutput: {
-            bitrateKbps: 160,
+            bitrateKbps: 128,
             codec: "aac",
-            samplingFreqHz: 44100,
+            samplingFreqHz: 48000,
         },
         videoOutput: {
             bitrateKbps: 3000,
