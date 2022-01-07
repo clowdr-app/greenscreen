@@ -76,10 +76,11 @@ function startCallback(context: ChromiumContext): InvokeCallback<ChromiumProcess
                     "--enable-logging=stderr",
                     // "--no-sandbox",
                     "--v=0",
-                    // "--app=https://shattereddisk.github.io/rickroll/rickroll.mp4",
+                    "--app=https://shattereddisk.github.io/rickroll/rickroll.mp4",
                     // "--app=https://www.youtube.com/watch?v=ucZl6vQ_8Uo", // audio-video sync - one minute
-                    "--app=https://www.youtube.com/watch?v=4S5KBlieT0I", // audio-video sync - 30 minutes
+                    // "--app=https://www.youtube.com/watch?v=4S5KBlieT0I", // audio-video sync - 30 minutes
                     // "--app=https://webglsamples.org/field/field.html", // webgl grass demo
+                    // "--app=https://lamberta.github.io/html5-animation/examples/ch16/05-filled-e.html", // HTML5 animation
                     // "--app=chrome://gpu",
                 ],
                 // args: ["--disable-dev-shm-usage"],

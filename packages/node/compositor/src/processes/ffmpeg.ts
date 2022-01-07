@@ -6,7 +6,7 @@ import * as xstate from "xstate";
 import { createMachine } from "xstate";
 import type { ApplicationContext } from "../config/application-context";
 import type { FFmpegOptions } from "./ffmpeg-config";
-import { compileOptions, makeTestFileOptions } from "./ffmpeg-config";
+import { compileOptions, makeTestFileOptions, makeTestRtmpOptions } from "./ffmpeg-config";
 
 export type FFmpegEvent =
     | { type: "EXIT" }
@@ -67,7 +67,7 @@ const startCallback: (
     const [args, outputFile] = compileOptions(options);
 
     try {
-        context.logger.debug({ args }, "Launching FFmpeg");
+        context.logger.debug({ args, outputFile }, "Launching FFmpeg");
         const ffmpegProcess = spawn("ffmpeg", [...args, outputFile], {
             shell: false,
             env: {
@@ -155,7 +155,15 @@ export const createFFmpegMachine = (
                             processRef: (context) =>
                                 xstate.spawn(
                                     startCallback(
-                                        makeTestFileOptions("/var/greenscreen/screen.mp4", context.displayNumber),
+                                        applicationContext.config.mode === "test-rtmp"
+                                            ? makeTestRtmpOptions(
+                                                  applicationContext.config.outputDestination,
+                                                  context.displayNumber
+                                              )
+                                            : makeTestFileOptions(
+                                                  `/var/greenscreen/${applicationContext.config.outputDestination}`,
+                                                  context.displayNumber
+                                              ),
                                         context
                                     ),
                                     { name: "ffmpegProcess" }

@@ -52,12 +52,15 @@ export function createCompositorMachine(
         on: {},
         states: {
             startingXvfb: {
-                entry: xstate.assign({
-                    xvfbMachine: (_context) =>
-                        xstate.spawn(xvfbMachine, {
-                            name: "xvfb",
-                        }),
-                }),
+                entry: [
+                    xstate.assign({
+                        xvfbMachine: (_context) =>
+                            xstate.spawn(xvfbMachine, {
+                                name: "xvfb",
+                            }),
+                    }),
+                    (context) => context.logger.info("Entered startingXvfb"),
+                ],
                 on: {
                     "XVFB.STARTED": {
                         target: "startingPulseAudio",

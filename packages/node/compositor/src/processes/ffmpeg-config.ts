@@ -13,7 +13,7 @@ interface BaseVideoInputOptions {
     frameRate?: number;
     height?: number;
     width?: number;
-    videoInputMaxQueuedPackets?: number;
+    maxQueuedPackets?: number;
 }
 
 type VideoInputOptions = {
@@ -54,12 +54,12 @@ interface VideoOutputOptions {
 
 interface PulseAudioOptions {
     format: "pulse";
-    audioSourceDevice: string;
+    sourceDevice: string;
 }
 
 interface BaseAudioInputOptions {
-    audioChannelCount?: number;
-    audioInputMaxQueuedPackets?: number;
+    channelCount?: number;
+    maxQueuedPackets?: number;
 }
 
 type AudioInputOptions = {
@@ -97,21 +97,21 @@ export interface FFmpegOptions {
 }
 
 /**
- * Build a set of FFmpeg options that records the screen to a 20-second file on disk.
+ * Build a set of FFmpeg options that streams the screen to an RTMP server for a limited duration.
  */
-export function makeTestFileOptions(outputFile: string, displayNumber: number): FFmpegOptions {
+export function makeTestRtmpOptions(rtmpUrl: string, displayNumber: number): FFmpegOptions {
     return {
         core: {
             promptOnOverwrite: false,
         },
         audioInput: {
             baseOptions: {
-                audioChannelCount: 2,
-                audioInputMaxQueuedPackets: 512,
+                channelCount: 2,
+                maxQueuedPackets: 512,
             },
             options: {
                 format: "pulse",
-                audioSourceDevice: "default",
+                sourceDevice: "default",
             },
         },
         videoInput: {
@@ -125,7 +125,70 @@ export function makeTestFileOptions(outputFile: string, displayNumber: number): 
                 frameRate: 30,
                 height: 720,
                 width: 1280,
-                videoInputMaxQueuedPackets: 512,
+                maxQueuedPackets: 512,
+            },
+        },
+        audioOutput: {
+            bitrateKbps: 160,
+            codec: "aac",
+            samplingFreqHz: 44100,
+        },
+        videoOutput: {
+            bitrateKbps: 3000,
+            options: {
+                videoCodec: "libx264",
+                preset: "veryfast",
+                profile: "main",
+                tune: "zerolatency",
+                otherParams: [
+                    "nal-hrd=cbr", // Force constant bitrate
+                    "scenecut=0", // No keyframe on scene cut
+                ].join(":"),
+            },
+            pixelFormat: "yuv420p",
+            videoQuantizerScaleMax: 0,
+            videoQuantizerScaleMin: 0,
+        },
+        output: {
+            options: {
+                format: "rtmp",
+            },
+            outputFile: rtmpUrl,
+            outputDuration: "00:00:20",
+        },
+    };
+}
+
+/**
+ * Build a set of FFmpeg options that records the screen to a 20-second file on disk.
+ */
+export function makeTestFileOptions(outputFile: string, displayNumber: number): FFmpegOptions {
+    return {
+        core: {
+            promptOnOverwrite: false,
+        },
+        audioInput: {
+            baseOptions: {
+                channelCount: 2,
+                maxQueuedPackets: 512,
+            },
+            options: {
+                format: "pulse",
+                sourceDevice: "default",
+            },
+        },
+        videoInput: {
+            options: {
+                format: "x11grab",
+                displayNumber,
+                drawMouse: false,
+                screenNumber: "0",
+            },
+            baseOptions: {
+                frameRate: 30,
+                height: 720,
+                width: 1280,
+                maxQueuedPackets: 512,
             },
         },
         audioOutput: {
@@ -182,14 +245,13 @@ function compileBaseVideoInputOptions(options: BaseVideoInputOptions): string[] 
     return [
         ...(options.height ? ["-s", `${computeWidth(options.width, options.height)}x${options.height}`] : []),
         ...(options.frameRate ? ["-framerate", options.frameRate.toString()] : []),
-        ...(options.videoInputMaxQueuedPackets
-            ? ["-thread_queue_size", options.videoInputMaxQueuedPackets.toString()]
-            : []),
+        ...(options.maxQueuedPackets ? ["-thread_queue_size", options.maxQueuedPackets.toString()] : []),
     ];
 }
 
 function compileX11grabInputOptions(options: X11grabOptions): string[] {
     return [
+        ...["-use_wallclock_as_timestamps", "1", "-fflags", "+genpts"], // See https://stackoverflow.com/a/48874015/633256
         ...["-draw_mouse", options.drawMouse ? "1" : "0"],
         ...["-i", `:${options.displayNumber}.${options.screenNumber}`],
     ];
@@ -205,15 +267,13 @@ function compileVideoInputOptions(options: VideoInputOptions): string[] {
 
 function compileBaseAudioInputOptions(options: BaseAudioInputOptions): string[] {
     return [
-        ...(options.audioChannelCount ? ["-ac", options.audioChannelCount.toString()] : []),
-        ...(options.audioInputMaxQueuedPackets
-            ? ["-thread_queue_size", options.audioInputMaxQueuedPackets.toString()]
-            : []),
+        ...(options.channelCount ? ["-ac", options.channelCount.toString()] : []),
+        ...(options.maxQueuedPackets ? ["-thread_queue_size", options.maxQueuedPackets.toString()] : []),
     ];
 }
 
 function compilePulseAudioInputOptions(options: PulseAudioOptions): string[] {
-    return [...["-i", options.audioSourceDevice]];
+    return [...["-i", options.sourceDevice]];
 }
 
 function compileAudioInputOptions(options: AudioInputOptions): string[] {
@@ -269,28 +329,29 @@ function compileAudioOutputOptions(options: AudioOutputOptions): string[] {
 }
 
 function compileRtmpOutputOptions(_options: RtmpOutputOptions): string[] {
-    return [
-        "-f",
-        "fifo",
-        "-fifo_format",
-        "flv",
-        "-map",
-        "0:v",
-        "-map",
-        "0:a",
-        "-drop_pkts_on_overflow",
-        "1",
-        "-attempt_recovery",
-        "1",
-        "-recovery_wait_time",
-        "1",
-    ];
+    // return [
+    //     "-f",
+    //     "fifo",
+    //     "-fifo_format",
+    //     "flv",
+    //     "-map",
+    //     "0:v",
+    //     "-map",
+    //     "0:a?",
+    //     "-drop_pkts_on_overflow",
+    //     "1",
+    //     "-attempt_recovery",
+    //     "1",
+    //     "-recovery_wait_time",
+    //     "1",
+    // ];
+    return ["-f", "flv", "-flvflags", "no_duration_filesize"];
 }
 
 function compileOutputOptions(options: OutputOptions): [outputOptions: string[], outputFile: string] {
     return [
         [
-            ...(options.outputDuration ? ["-t", options.outputDuration] : []),
+            ...(options.outputDuration && options.options.format !== "rtmp" ? ["-t", options.outputDuration] : []),
             ...(options.options.format === "rtmp" ? compileRtmpOutputOptions(options.options) : []),
         ],
         options.outputFile,

@@ -1,4 +1,4 @@
-import type { ActorRefFrom } from "xstate";
+import type { ActorRefFrom, StateMachine } from "xstate";
 import * as xstate from "xstate";
 import { createMachine } from "xstate";
 import type { ApplicationContext } from "../config/application-context";
@@ -11,26 +11,26 @@ interface TestControllerContext {
     compositorRef?: ActorRefFrom<CompositorMachine>;
 }
 
-type TestControllerTypestate =
-    | {
-          value: "initialising";
-          context: TestControllerContext & {
-              compositorRef: undefined;
-          };
-      }
-    | {
-          value: "capturing";
-          context: TestControllerContext & {
-              compositorRef: ActorRefFrom<CompositorMachine>;
-          };
-      };
+// type TestControllerTypestate =
+//     | {
+//           value: "initialising";
+//           context: TestControllerContext & {
+//               compositorRef: undefined;
+//           };
+//       }
+//     | {
+//           value: "capturing";
+//           context: TestControllerContext & {
+//               compositorRef: ActorRefFrom<CompositorMachine>;
+//           };
+//       };
 
 export function createTestController(
     applicationContext: ApplicationContext
-): any /*StateMachine<TestControllerContext, any, TestControllerEvent | Event>*/ {
+): StateMachine<TestControllerContext, any, TestControllerEvent | Event> {
     const compositorMachine = createCompositorMachine(applicationContext);
 
-    return createMachine<TestControllerContext, TestControllerEvent | Event, TestControllerTypestate>({
+    return createMachine<TestControllerContext, TestControllerEvent | Event>({
         id: "test-controller",
         description: "Runs the compositor in an automated self-test mode",
         initial: "initialising",
