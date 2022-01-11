@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.3
 FROM bitnami/minideb:bullseye AS base
 
-ARG PNPM_VERSION=6.24.2
+ARG PNPM_VERSION=6.25.0
 
 # Remove debian base image apt cache deletion script
 RUN rm -f /etc/apt/apt.conf.d/docker-clean

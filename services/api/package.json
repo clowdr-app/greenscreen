@@ -50,7 +50,7 @@
         "ts-node": "^10.4.0",
         "tsc-watch": "^4.5.0"
     },
-    "packageManager": "pnpm@6.24.2",
+    "packageManager": "pnpm@6.25.0",
     "engines": {
         "node": ">=16.x",
         "pnpm": "^6.x"

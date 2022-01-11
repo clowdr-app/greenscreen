@@ -13,6 +13,12 @@
    1. Windows: `mklink .env.local .env.current`
    1. Linux: `ln -s .env.current .env.local`
 
+### AWS deployment
+
+1. Configure your current envfile appropriately (AWS account ID etc.)
+1. Go to the `packages/node/aws` directory.
+1. Run `pnpm cdk -- deploy --all`
+
 ### Compositor
 
 1. Go to the `packages/node/compositor` directory.
@@ -28,3 +34,9 @@
 ### API
 
 TODO
+
+### Common activities
+
+#### Check for package updates
+
+1. `pnpm dlx npm-check-updates`

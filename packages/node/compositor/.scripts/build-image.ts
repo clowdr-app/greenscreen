@@ -1,6 +1,8 @@
 import execa from "execa";
 import { ChildProcess, spawn } from "node:child_process";
 import { exit, stderr, stdin, stdout } from "node:process";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 
 function monitorProc(process: ChildProcess, name: string): void {
     process.on("close", () => console.log(`${name} close`));
@@ -12,6 +14,18 @@ function monitorProc(process: ChildProcess, name: string): void {
 }
 
 async function main(): Promise<void> {
+    const args = yargs(hideBin(process.argv))
+        .scriptName("build-image")
+        .options({
+            target: {
+                type: "array",
+                choices: ["linux/arm64/v8", "linux/amd64"],
+                description: "Build targets.",
+            },
+        })
+        .strict()
+        .parseSync();
+
     const gitResult = await execa("git rev-parse --short HEAD", { shell: true });
     const commitHash = gitResult.stdout;
 
@@ -20,10 +34,7 @@ async function main(): Promise<void> {
     const pnpmContextProc = spawn(
         `pnpm --silent --workspace-root pnpm-context -- -p '**/tsconfig*.json' -p '!.scripts/' packages/node/compositor/Dockerfile`,
         {
-            // cwd: cwd(),
-            // // detached: true,
             shell: true,
-            // stdio: "inherit",
             stdio: [stdin, "pipe", stderr],
         }
     );
@@ -31,15 +42,11 @@ async function main(): Promise<void> {
     monitorProc(pnpmContextProc, "pnpm-context");
 
     const dockerProc = spawn(
-        // `docker image build --build-arg VCS_REF=${commitHash} --build-arg BUILD_DATE="${date}" --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -`,
-        `docker buildx build --platform linux/arm64/v8 --load --build-arg VCS_REF=${commitHash} --build-arg BUILD_DATE="${date}" --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -`,
-        // `docker buildx build --platform linux/amd64 --load --build-arg VCS_REF=${commitHash} --build-arg BUILD_DATE="${date}" --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -`,
+        `docker buildx build --platform ${args.target?.join(
+            ","
+        )} --load --build-arg VCS_REF=${commitHash} --build-arg BUILD_DATE="${date}" --build-arg PACKAGE_PATH=packages/node/compositor -t midspace/compositor -f Dockerfile -`,
         { shell: true, stdio: ["pipe", stdout, stderr] }
     );
-
-    // fs.writeFile("out.tar", )
-    // const outputFile = fs.createWriteStream("out.tar");
-    // pnpmContextProc.stdout.pipe(outputFile);
 
     dockerProc.on("exit", (code) => {
         exit(code ?? 0);

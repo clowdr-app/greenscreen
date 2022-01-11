@@ -55,42 +55,8 @@ async function main(): Promise<void> {
         recursive: true,
     });
 
-    // const dockerProc = spawn(
-    //     `docker`,
-    //     [
-    //         "run",
-    //         "--rm",
-    //         "-it",
-    //         "--mount",
-    //         `type=bind,source=${dockerifyPath(tempDir)},target=/var/greenscreen`,
-    //         ...(args.debug ? ["-p", "9229:9229"] : []),
-    //         ...(args.inspectXstate ? ["-p", "8888:8888"] : []),
-    //         ...["-p", "1936:1936"],
-    //         // ↑ Expose Node default debug port if debug enabled.
-    //         "--cap-add",
-    //         "SYS_ADMIN",
-    //         // ↑ Allow the container to use SYS_ADMIN permission, required for the Chromium sandbox.
-    //         // "--security-opt",
-    //         // "seccomp=src/resources/chrome.json",
-    //         // ↑ An tighter alternative to the SYS_ADMIN permission - disabled for now because
-    //         // it's rather more complicated to supply to ECS
-    //         ...(args.debug ? ["-e", "NODE_OPTIONS=--inspect-brk=0.0.0.0"] : []),
-    //         // ↑ Enable inspect-brk Node option if debug enabled. Specify IP 0.0.0.0 to allow non-localhost debugger to attach.
-    //         ...(args.inspectXstate ? ["-e", "GSC_XSTATE_INSPECT_ENABLED=true"] : []),
-    //         // ↑ Enable XState inspector option.
-    //         ...(args.logLevel ? ["-e", `GSC_LOG_LEVEL=${args.logLevel}`] : []),
-    //         // ↑ Set the Pino log level.
-    //         ...(args.mode ? ["-e", `GSC_MODE=${args.mode}`] : []),
-    //         ...(args.outputDestination ? ["-e", `GSC_OUTPUT_DESTINATION=${args.outputDestination}`] : []),
-    //         "--name=midspace-compositor",
-    //         "midspace/compositor",
-    //     ],
-    //     { stdio: ["inherit", "pipe", "inherit"] }
-    // );
-
     spawn(
         `docker`,
-        // [],
         [
             "compose",
             "-f",

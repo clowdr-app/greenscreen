@@ -1,5 +1,5 @@
 import type { StackProps } from "aws-cdk-lib";
-import { Stack } from "aws-cdk-lib";
+import { CfnOutput, Stack } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
@@ -20,6 +20,7 @@ export class CompositorStack extends Stack {
             instanceType: ec2.InstanceType.of(ec2.InstanceClass.C6I, ec2.InstanceSize.LARGE),
             minCapacity: 0,
             maxCapacity: 1,
+            desiredCapacity: 0,
         });
 
         const logging = new ecs.AwsLogDriver({ streamPrefix: "compositor" });
@@ -28,11 +29,13 @@ export class CompositorStack extends Stack {
 
         s3Bucket.grantReadWrite(taskDefinition.taskRole);
 
-        const repository = ecr.Repository.fromRepositoryName(this, "CompositorImageRepository", "midspace/compositor");
+        const repository = new ecr.Repository(this, "CompositorImageRepository", {
+            repositoryName: "midspace/compositor",
+        });
 
         const compositorTaskDefinition = taskDefinition.addContainer("compositor", {
             image: ecs.ContainerImage.fromEcrRepository(repository, "latest"),
-            memoryLimitMiB: 4096,
+            memoryLimitMiB: 3584,
             cpu: 512,
             logging,
             linuxParameters: new ecs.LinuxParameters(this, "LinuxParameters"),
@@ -40,6 +43,18 @@ export class CompositorStack extends Stack {
 
         compositorTaskDefinition.linuxParameters?.addCapabilities(ecs.Capability.SYS_ADMIN);
         compositorTaskDefinition.addEnvironment("S3_BUCKET_NAME", s3Bucket.bucketName);
+
+        new CfnOutput(this, "ContainerRepositoryUrl", {
+            value: repository.repositoryUri,
+        });
+
+        new CfnOutput(this, "TaskDefinitionArn", {
+            value: taskDefinition.taskDefinitionArn,
+        });
+
+        new CfnOutput(this, "ClusterArn", {
+            value: cluster.clusterArn,
+        });
 
         // container.addPortMappings({
         //     containerPort: 80,
