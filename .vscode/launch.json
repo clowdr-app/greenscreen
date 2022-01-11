@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "address": "localhost",
+            "cwd": "${workspaceFolder}/packages/node/compositor",
+            "localRoot": "${workspaceFolder}/packages/node/compositor",
+            "name": "Attach to Remote",
+            "port": 9229,
+            "remoteRoot": "/opt/greenscreen/packages/node/compositor",
+            "request": "attach",
+            "skipFiles": ["${workspaceFolder}/**/node_modules/**/*.js", "<node_internals>/**"],
+            "type": "node"
+        }
+    ]
+}

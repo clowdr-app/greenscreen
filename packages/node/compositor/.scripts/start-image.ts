@@ -2,6 +2,10 @@ import { spawn } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import normalizePath from "normalize-path";
+import open from "open";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
+import { sleep } from "../src/util/sleep";
 
 function dockerifyPath(path: string): string {
     const posixPath = normalizePath(path);
@@ -12,6 +16,36 @@ function dockerifyPath(path: string): string {
 }
 
 async function main(): Promise<void> {
+    const args = yargs(hideBin(process.argv))
+        .scriptName("start-image")
+        .options({
+            debug: {
+                boolean: true,
+                default: false,
+            },
+            "inspect-xstate": {
+                boolean: true,
+                default: false,
+            },
+            "log-level": {
+                string: true,
+                choices: ["trace", "debug", "info", "warn", "error", "fatal"],
+                default: "info",
+            },
+            "output-destination": {
+                string: true,
+                default: "screen.mp4",
+                description:
+                    "Name of the destination for the composited video. In test-file mode, this is a filename. In rtmp mode, this is an RTMP Push URL.",
+            },
+            mode: {
+                choices: ["test-file", "test-rtmp"],
+                description: "Mode in which to run the compositor.",
+            },
+        })
+        .strict()
+        .parseSync();
+
     const cwd = process.cwd();
     const tempDir = join(cwd, "build", "temp");
 
@@ -24,24 +58,40 @@ async function main(): Promise<void> {
     spawn(
         `docker`,
         [
-            "run",
-            "--rm",
-            "-it",
-            "--mount",
-            `type=bind,source=${dockerifyPath(tempDir)},target=/var/greenscreen`,
-            "--cap-add",
-            "SYS_ADMIN",
-            // An tighter alternative to the SYS_ADMIN permission - disabled for now because
-            // it's rather more complicated to supply to ECS
-            // "--security-opt",
-            // "seccomp=src/resources/chrome.json",
-            "--env",
-            "STREAM_INGEST_URL=rtmps://000000000000.global-contribute.live-video.net:443/app/sk_eu-west-1_XXXXXXXXXXXX_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-            "--name=midspace-compositor",
-            "midspace/compositor",
+            "compose",
+            "-f",
+            "docker-compose.yaml",
+            "-p",
+            "greenscreen",
+            ...(args.mode === "test-rtmp" ? ["--profile", "owncast"] : []),
+            "up",
+            "--force-recreate",
         ],
-        { stdio: ["inherit", "inherit", "inherit"] }
+        {
+            stdio: ["inherit", "inherit", "inherit"],
+            env: {
+                ...process.env,
+                NODE_OPTIONS: args.debug ? "--inspect-brk=0.0.0.0" : undefined,
+                GSC_XSTATE_INSPECT_ENABLED: args.inspectXstate ? "true" : undefined,
+                GSC_LOG_LEVEL: args.logLevel ? args.logLevel : undefined,
+                GSC_MODE: args.mode ? args.mode : undefined,
+                GSC_OUTPUT_DESTINATION: args.outputDestination ? args.outputDestination : undefined,
+            },
+            shell: false,
+        }
     );
+
+    // const pinoProc = spawn(`pino-pretty`, ["-t", "SYS:HH:MM:ss.l", "-S", "-i", "hostname,pid", "--crlf"], {
+    //     shell: true,
+    //     stdio: ["pipe", "inherit", "inherit"],
+    // });
+
+    // dockerProc.stdout.pipe(pinoProc.stdin);
+
+    if (args.inspectXstate) {
+        await sleep(5000);
+        await open("https://statecharts.io/inspect?server=localhost:8888");
+    }
 }
 
 main().catch((err) => {

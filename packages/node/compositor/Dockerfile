@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.3
 FROM bitnami/minideb:bullseye AS base
 
-ARG PNPM_VERSION=6.23.6
+ARG PNPM_VERSION=6.25.0
 
 # Remove debian base image apt cache deletion script
 RUN rm -f /etc/apt/apt.conf.d/docker-clean
@@ -104,10 +104,12 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
 
 # USER root
 # RUN chmod -R 755 /opt/greenscreen
+RUN sed -i '102,108d' /opt/greenscreen/packages/node/compositor/node_modules/@xstate/inspect/lib/server.js
 
 USER app
 # ENTRYPOINT [ "/bin/b" ]
-CMD [ "pnpm", "start" ]
+# CMD [ "pnpm", "start" ]
+CMD [ "node", "--enable-source-maps", "build/cjs/index.js" ]
 # COPY --chown=app:app ./pkg/${PACKAGE_PATH}/src/resources/start.sh /root/start.sh
 # ENTRYPOINT [ "/bin/sh" ]
 # CMD ["/root/start.sh"]

@@ -24,12 +24,14 @@
 
         /* Source Map Options */
         "inlineSourceMap": true,
+        // "sourceMap": true,
 
         /* Experimental Options */
         "experimentalDecorators": true,
 
         /* Advanced Options */
         "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true
+        "forceConsistentCasingInFileNames": true,
+        "isolatedModules": true
     }
 }

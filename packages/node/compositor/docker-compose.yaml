@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  compositor:
+    image: midspace/compositor:latest
+    ports:
+      - "9229:9229"
+      - "8888:8888"
+    restart: "no"
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - ./build/temp:/var/greenscreen
+    environment:
+      NODE_OPTIONS: ${NODE_OPTIONS}
+      GSC_XSTATE_INSPECT_ENABLED: ${GSC_XSTATE_INSPECT_ENABLED}
+      GSC_LOG_LEVEL: ${GSC_LOG_LEVEL}
+      GSC_MODE: ${GSC_MODE}
+      GSC_OUTPUT_DESTINATION: ${GSC_OUTPUT_DESTINATION}
+  owncast:
+    image: gabekangas/owncast:latest
+    ports:
+      - "8081:8080"
+      - "1936:1935"
+    restart: "no"
+    volumes:
+      - ./build/temp/owncast-data:/app/data
+    profiles:
+      - "owncast"

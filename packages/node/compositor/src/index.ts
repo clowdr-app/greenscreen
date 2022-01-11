@@ -1,36 +1,35 @@
-import { strict as assert } from "node:assert";
-import { startChromium } from "./processes/chromium";
-import { startFFmpeg } from "./processes/ffmpeg";
-import { startPulseAudio } from "./processes/pulseaudio";
-import { startXvfb, waitXvfb } from "./processes/xvfb";
+import * as ws from "ws";
+import { interpret } from "xstate";
+import { makeApplicationContext } from "./config/application-context";
+import { resolveConfig } from "./config/config";
+import { createTestController } from "./controller/test-controller";
 import { logger } from "./util/logger";
-import { pathExists } from "./util/path-exists";
 import { sleep } from "./util/sleep";
 
-// const args = arg({
-//     "--sleep": Boolean,
-// });
-
-export const display = process.env.DISPLAY ?? "1";
-logger.info({ display }, "Display number");
-
-const streamIngestUrl = process.env.STREAM_INGEST_URL || "";
-assert(streamIngestUrl);
-
 async function main(): Promise<void> {
-    if (await pathExists(`/tmp/.X${display}-lock`)) {
-        throw new Error("X lockfile already exists. Please close the existing server.");
+    await sleep(10000);
+    const config = resolveConfig();
+    const applicationContext = makeApplicationContext(config);
+
+    if (config.enableXStateInspector) {
+        const server = await import("@xstate/inspect/lib/server");
+        const port = 8888;
+        server.inspect({
+            server: new ws.Server({
+                port,
+            }),
+        });
+        applicationContext.logger.info({ port }, "XState inspector created");
     }
-    await startXvfb(display);
-    await waitXvfb(display);
-    // await startDBus();
-    await startPulseAudio(display);
-    await startChromium(display);
-    await sleep(5000);
-    // spawn("glxgears", ["-display", `:${display}`], {
-    //     shell: false,
-    // });
-    await startFFmpeg({ displayNumber: display, rtmpURL: streamIngestUrl });
+
+    const testController = createTestController(applicationContext);
+
+    interpret(testController, { devTools: config.enableXStateInspector })
+        .onTransition((state) =>
+            applicationContext.logger.info({ state: state.value, machineId: state.machine?.id }, "State transition")
+        )
+        .onEvent((event) => applicationContext.logger.info({ event }, "Event"))
+        .start();
 }
 
 logger.info("Starting compositor");
@@ -38,19 +37,3 @@ main().catch((err) => {
     logger.error({ err });
     return 1;
 });
-
-// }
-
-// (async () => {
-//     const browser = await puppeteer.launch({
-//         executablePath: "/usr/bin/chromium",
-//         args: ["--disable-dev-shm-usage"],
-//     });
-//     const page = await browser.newPage();
-//     await page.goto("https://news.ycombinator.com", {
-//         waitUntil: "networkidle2",
-//     });
-//     await page.pdf({ path: "/root/temp/hn.pdf", format: "a4" });
-
-//     await browser.close();
-// })();
