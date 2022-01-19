@@ -42,7 +42,7 @@ async function buildImage(): Promise<void> {
         const proc = spawn(`pnpm`, ["build:image", "--", "--target", "linux/amd64"], {
             stdio: ["inherit", "inherit", "inherit"],
             env: process.env,
-            shell: false,
+            shell: true,
         });
 
         let resolved = false;

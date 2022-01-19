@@ -26,7 +26,7 @@ async function main(): Promise<void> {
         {
             stdio: ["inherit", "inherit", "inherit"],
             env: process.env,
-            shell: false,
+            shell: true,
         }
     );
 
