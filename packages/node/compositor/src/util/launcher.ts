@@ -42,7 +42,7 @@ export function launch(
             childLogger.info("child process spawn");
         });
     } catch (err) {
-        const msg = "Failed to launch ffmpeg";
+        const msg = `Failed to launch ${command}`;
         logger.error({ err }, msg);
         throw new Error(msg);
     }
