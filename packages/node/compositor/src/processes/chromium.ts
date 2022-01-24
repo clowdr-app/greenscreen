@@ -107,6 +107,7 @@ function startCallback(context: ChromiumContext): InvokeCallback<ChromiumProcess
                     }
                 });
 
+                context.logger.debug("chromium version: " + browser.version());
                 const proc = browser.process();
                 if (proc?.stdout) {
                     const rlStdout = createInterface(proc.stdout);

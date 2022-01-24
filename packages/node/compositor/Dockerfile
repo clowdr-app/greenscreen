@@ -24,6 +24,7 @@ WORKDIR /opt/greenscreen
 
 FROM base AS chrome
 ARG PACKAGE_PATH
+# ENV PUPPETEER_CHROMIUM_REVISION="885264"
 
 RUN --mount=type=cache,target=/var/cache/apt \
     install_packages \
@@ -37,6 +38,12 @@ RUN --mount=type=cache,target=/var/cache/apt \
     mesa-utils \
     libx11-dev \
     libxext-dev
+
+# RUN --mount=type=cache,target=/var/cache/apt \
+#     apt-get update
+
+# RUN --mount=type=cache,target=/var/cache/apt \
+#     install_packages `apt-cache depends chromium | awk '/Depends:/{print$2}'`
 
 RUN mkdir -p /var/run/dbus \
     && dbus-uuidgen > /var/lib/dbus/machine-id
@@ -110,6 +117,8 @@ USER app
 # ENTRYPOINT [ "/bin/b" ]
 # CMD [ "pnpm", "start" ]
 CMD [ "node", "--enable-source-maps", "build/cjs/index.js" ]
+# CMD ["tail", "-f", "/dev/null"]
+# CMD ls node_modules/puppeteer/.local-chromium/ && node_modules/puppeteer/.local-chromium/*/chrome-linux/chrome --product-version
 # COPY --chown=app:app ./pkg/${PACKAGE_PATH}/src/resources/start.sh /root/start.sh
 # ENTRYPOINT [ "/bin/sh" ]
 # CMD ["/root/start.sh"]
