@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import type * as pino from "pino";
 import puppeteer from "puppeteer-core";
 import { createInterface } from "readline";
@@ -52,12 +53,14 @@ type ChromiumTypestate =
           };
       };
 
+const chromiumExecutablePath = "/usr/bin/chromium";
 function startCallback(context: ChromiumContext): InvokeCallback<ChromiumProcessCommand, ChromiumEvent> {
     return (callback, onReceive) => {
+        spawnSync(chromiumExecutablePath, ["--product-version"], { stdio: "inherit" });
         // let maybeBrowser: puppeteer.Browser | null = null;
         puppeteer
             .launch({
-                executablePath: "/usr/bin/chromium",
+                executablePath: chromiumExecutablePath,
                 env: {
                     ...process.env,
                     DISPLAY: `:${context.displayNumber}.0`,
